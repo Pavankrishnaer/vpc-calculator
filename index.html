@@ -1,0 +1,3130 @@
+
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<!-- v2.1 -->
+<title>VPC Subnet Learning Calculator | AWS</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg:        #f0f4ff;
+    --surface:   #ffffff;
+    --border:    #e0e7ff;
+    --text:      #1e1b4b;
+    --muted:     #6366f1;
+    --subtle:    #8b8fc8;
+
+    --blue:      #4f46e5;
+    --blue-lt:   #e0e7ff;
+    --blue-mid:  #818cf8;
+    --violet:    #7c3aed;
+    --violet-lt: #ede9fe;
+    --teal:      #0891b2;
+    --teal-lt:   #cffafe;
+    --green:     #059669;
+    --green-lt:  #d1fae5;
+    --amber:     #d97706;
+    --amber-lt:  #fef3c7;
+    --red:       #dc2626;
+    --red-lt:    #fee2e2;
+    --orange:    #ea580c;
+    --orange-lt: #fff7ed;
+
+    --radius:    14px;
+    --shadow-sm: 0 2px 8px rgba(79,70,229,0.08);
+    --shadow-md: 0 4px 20px rgba(79,70,229,0.12);
+    --shadow-lg: 0 8px 32px rgba(79,70,229,0.16);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .vpc-standalone {
+    font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    font-size: 15px;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(99,102,241,0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(124,58,237,0.06) 0%, transparent 50%),
+      radial-gradient(circle at 60% 30%, rgba(8,145,178,0.05) 0%, transparent 40%);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 32px 16px;
+  }
+
+  .container { max-width: 1200px; margin: 0 auto; }
+
+  /* ── Header ── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 32px;
+    padding: 36px 24px 32px;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #0891b2 100%);
+    border-radius: 20px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(79,70,229,0.3);
+  }
+  .page-header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+  .page-header h1 {
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 10px;
+    letter-spacing: -0.03em;
+    position: relative;
+  }
+  .page-header p {
+    font-size: 0.88rem;
+    color: rgba(255,255,255,0.82);
+    line-height: 1.6;
+    max-width: 560px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  /* ── Sticky Progress Bar ── */
+  .progress-bar-wrap {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(255,255,255,0.96);
+    backdrop-filter: blur(12px);
+    border-bottom: 2px solid var(--border);
+    padding: 10px 16px;
+    margin: 0 -16px 28px -16px;
+    box-shadow: 0 4px 16px rgba(79,70,229,0.1);
+  }
+  .progress-steps {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; max-width: 920px; margin: 0 auto;
+  }
+  .progress-step {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 12px; border-radius: 20px;
+    font-size: 0.78rem; font-weight: 600;
+    color: #334155; transition: all 0.25s ease;
+    white-space: nowrap; cursor: default;
+  }
+  .progress-step .step-num {
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.72rem; font-weight: 700;
+    background: #e2e8f0; color: #334155;
+    transition: all 0.3s ease; flex-shrink: 0;
+  }
+  .progress-step .step-label { display: inline; }
+  .progress-step.done { color: var(--green); }
+  .progress-step.done .step-num { background: var(--green); color: white; }
+  .progress-step.done .step-num::after { content: "✓"; }
+  .progress-step.done .step-num span { display: none; }
+  .progress-step.active { color: var(--blue); }
+  .progress-step.active .step-num {
+    background: linear-gradient(135deg, var(--blue), var(--violet));
+    color: white; box-shadow: 0 0 0 4px rgba(99,102,241,0.2);
+  }
+  .progress-connector { width: 32px; height: 2px; background: #e2e8f0; flex-shrink: 0; transition: background 0.3s; }
+  .progress-connector.done { background: linear-gradient(90deg, var(--green), #34d399); }
+
+  @media (max-width: 520px) {
+    .progress-bar-wrap { padding: 8px 12px; margin: 0 -12px 20px -12px; }
+    .progress-step { padding: 4px 6px; gap: 5px; font-size: 0.72rem; }
+    .progress-step .step-label { display: none; }
+    .progress-step.active .step-label { display: inline; }
+    .progress-connector { width: 16px; }
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 26px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s, transform 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+  .card.step-1::before { background: linear-gradient(90deg, #4f46e5, #818cf8); }
+  .card.step-2::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+  .card.step-3::before { background: linear-gradient(90deg, #0891b2, #22d3ee); }
+  .card.ref::before    { background: linear-gradient(90deg, #334155, #cbd5e1); }
+  .card:hover { box-shadow: var(--shadow-md); }
+
+  .card-header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 18px;
+  }
+  .card-badge {
+    width: 28px; height: 28px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .badge-blue   { background: linear-gradient(135deg, #4f46e5, #6366f1); box-shadow: 0 2px 8px rgba(79,70,229,0.3); }
+  .badge-violet { background: linear-gradient(135deg, #7c3aed, #8b5cf6); box-shadow: 0 2px 8px rgba(124,58,237,0.3); }
+  .badge-teal   { background: linear-gradient(135deg, #0891b2, #06b6d4); box-shadow: 0 2px 8px rgba(8,145,178,0.3); }
+  .badge-ref    { background: linear-gradient(135deg, #334155, #cbd5e1); font-size: 0.65rem; }
+
+  .card h2 {
+    font-size: 0.85rem; text-transform: uppercase;
+    letter-spacing: 0.1em; color: #1e1b4b; font-weight: 700; margin: 0;
+  }
+
+  .vpc-standalone label {
+    display: block; font-size: 0.8rem;
+    color: var(--text); margin-bottom: 6px; font-weight: 600;
+    opacity: 0.75;
+  }
+
+  .vpc-standalone input[type="text"],
+  .vpc-standalone input[type="number"],
+  .vpc-standalone select {
+    padding: 9px 13px;
+    border: 1.5px solid var(--border);
+    border-radius: 9px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.88rem;
+    background: #fafbff;
+    color: var(--text);
+    outline: none;
+    transition: border 0.2s, background 0.2s, box-shadow 0.2s;
+    width: 100%;
+  }
+  .vpc-standalone input[type="number"]::-webkit-inner-spin-button,
+  .vpc-standalone input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .vpc-standalone input[type="number"] { -moz-appearance: textfield; }
+  .vpc-standalone input:focus,
+  .vpc-standalone select:focus {
+    border-color: var(--blue);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+  }
+  .vpc-standalone input::placeholder { color: #a5b4fc; font-style: italic; }
+
+  .help { margin-top: 5px; font-size: 0.74rem; color: var(--subtle); line-height: 1.4; }
+
+  .top-row { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 18px; }
+
+  /* ── Pills ── */
+  .pill-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .pill {
+    border: 1.5px solid var(--border);
+    background: #f5f6ff;
+    color: var(--muted);
+    padding: 4px 13px; border-radius: 999px;
+    font-size: 0.78rem; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; user-select: none;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .pill:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-lt); transform: translateY(-1px); box-shadow: 0 2px 8px rgba(79,70,229,0.15); }
+  .pill.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+  /* ── VPC hint bar ── */
+  .vpc-hint {
+    padding: 11px 16px; border-radius: 10px;
+    font-size: 0.82rem; line-height: 1.6; display: none;
+    font-weight: 500;
+  }
+  /* VPC prefix pulse indicator */
+  @keyframes bounce-down {
+    0%, 100% { transform: translateY(0); opacity: 1; }
+    50%       { transform: translateY(5px); opacity: 0.6; }
+  }
+  /* Prefix select wrap — nudge lives inside here */
+  .cidr-input-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 120px;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .prefix-select-wrap {
+    position: relative;
+  }
+  #prefixNudgeRow {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%; transform: translateX(-50%);
+    z-index: 20; pointer-events: none;
+    white-space: nowrap;
+  }
+  .prefix-nudge {
+    display: inline-block;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: #fff; font-size: 0.68rem; font-weight: 700;
+    padding: 4px 11px; border-radius: 20px;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(79,70,229,0.4);
+  }
+  .prefix-nudge::after {
+    content: '';
+    position: absolute; top: 100%; left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #7c3aed;
+  }
+
+  .vpc-hint.ok   { background: linear-gradient(135deg, #d1fae5, #ecfdf5); border: 1.5px solid #6ee7b7; color: #065f46; display: block; }
+  .vpc-hint.warn { background: linear-gradient(135deg, #fef3c7, #fffbeb); border: 1.5px solid #fcd34d; color: #92400e; display: block; }
+  .vpc-hint.bad  { background: linear-gradient(135deg, #fee2e2, #fef2f2); border: 1.5px solid #fca5a5; color: #991b1b; display: block; }
+
+  /* ── Subnet def list ── */
+  .def-headers {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 140px minmax(0, 1fr) 44px;
+    gap: 12px; margin-bottom: 8px; padding: 0 6px;
+    align-items: center;
+  }
+  .col-label { font-size: 0.65rem; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; }
+
+  .subnet-def-list { display: flex; flex-direction: column; gap: 8px; }
+  .subnet-def {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 140px minmax(0, 1fr) 44px;
+    gap: 12px; align-items: center;
+    padding: 10px 12px; border-radius: 10px;
+    background: #fafbff; border: 1.5px solid var(--border);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .subnet-def > * { min-width: 0; }
+  .subnet-def input,
+  .subnet-def select,
+  .subnet-def button { width: 100%; min-width: 0; }
+  .subnet-def-inner-row { display: contents; }
+
+  .subnet-hint { font-size: 0.75rem; color: #334155; padding: 2px 0; }
+  .subnet-hint strong { color: var(--blue); }
+
+  .remove-btn {
+    background: none; border: 1.5px solid var(--border); border-radius: 8px;
+    width: 44px; min-width: 44px; height: 44px;
+    padding: 0; cursor: pointer; font-size: 1rem;
+    color: #cbd5e1; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .remove-btn:hover { border-color: var(--red); color: var(--red); background: var(--red-lt); }
+
+  .add-btn {
+    margin-top: 10px; background: none;
+    border: 2px dashed #c7d2fe; border-radius: 10px;
+    padding: 10px; width: 100%;
+    font-family: inherit; font-size: 0.84rem;
+    color: #a5b4fc; cursor: pointer; transition: all 0.2s;
+    font-weight: 600;
+  }
+  .add-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-lt); }
+
+  /* ── Def summary ── */
+  #defSummary {
+    margin-top: 14px; padding: 14px 16px;
+    background: linear-gradient(135deg, #f5f6ff, #eef2ff);
+    border: 1.5px solid #c7d2fe; border-radius: 10px;
+    font-size: 0.83rem; color: var(--text); line-height: 1.9;
+  }
+
+  /* ── AZ toggles ── */
+  .az-section { display: flex; flex-direction: column; gap: 12px; }
+  .az-row { border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; transition: box-shadow 0.2s; }
+  .az-row:hover { box-shadow: var(--shadow-sm); }
+  .az-title {
+    padding: 10px 16px; font-size: 0.8rem; font-weight: 700;
+    border-bottom: 1.5px solid rgba(0,0,0,0.06);
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .az-title small { font-weight: 500; opacity: 0.7; font-size: 0.74rem; }
+  .az-toggles { padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 8px; background: rgba(255,255,255,0.5); }
+
+  .toggle-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 14px; border-radius: 8px;
+    border: 1.5px solid var(--border); cursor: pointer;
+    font-size: 0.8rem; font-weight: 600; background: #fff;
+    transition: all 0.15s; user-select: none; color: #334155;
+  }
+  .toggle-chip.active-az-1 { background: #eef2ff; border-color: #a5b4fc; color: #3730a3; }
+  .toggle-chip.active-az-2 { background: #f5f3ff; border-color: #c4b5fd; color: #5b21b6; }
+  .toggle-chip.active-az-3 { background: #ecfeff; border-color: #67e8f9; color: #155e75; }
+  .toggle-chip.active-az-4 { background: #fff7ed; border-color: #fdba74; color: #9a3412; }
+  .toggle-chip .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: currentColor; opacity: 0.4;
+  }
+  .toggle-chip.active-az-1 .dot,
+  .toggle-chip.active-az-2 .dot,
+  .toggle-chip.active-az-3 .dot,
+  .toggle-chip.active-az-4 .dot { opacity: 1; }
+  .no-subnets { font-size: 0.78rem; color: #334155; }
+
+  /* AZ colour strips */
+  .az-1 .az-title { background: linear-gradient(135deg, #eef2ff, #e0e7ff); color: #3730a3; border-color: #c7d2fe; }
+  .az-1 { border-color: #c7d2fe; }
+  .az-2 .az-title { background: linear-gradient(135deg, #f5f3ff, #ede9fe); color: #5b21b6; border-color: #ddd6fe; }
+  .az-2 { border-color: #ddd6fe; }
+  .az-3 .az-title { background: linear-gradient(135deg, #ecfeff, #cffafe); color: #155e75; border-color: #a5f3fc; }
+  .az-3 { border-color: #a5f3fc; }
+  .az-4 .az-title { background: linear-gradient(135deg, #fff7ed, #ffedd5); color: #9a3412; border-color: #fed7aa; }
+  .az-4 { border-color: #fed7aa; }
+
+  /* ── Calc button ── */
+  .calc-btn {
+    width: 100%; padding: 15px;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 60%, #0891b2 100%);
+    color: white; border: none; border-radius: 12px;
+    font-family: inherit; font-size: 1.05rem; font-weight: 700;
+    cursor: pointer; transition: all 0.25s;
+    margin-top: 4px; letter-spacing: 0.03em;
+    box-shadow: 0 4px 16px rgba(79,70,229,0.35);
+    position: relative; overflow: hidden;
+  }
+  .calc-btn::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .calc-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(79,70,229,0.45); }
+  .calc-btn:hover::after { opacity: 1; }
+  .calc-btn:active { transform: translateY(0); }
+
+  @keyframes pulse-ready {
+    0%   { box-shadow: 0 4px 16px rgba(79,70,229,0.4), 0 0 0 0 rgba(79,70,229,0.5); }
+    70%  { box-shadow: 0 4px 16px rgba(79,70,229,0.4), 0 0 0 14px rgba(79,70,229,0); }
+    100% { box-shadow: 0 4px 16px rgba(79,70,229,0.4), 0 0 0 0 rgba(79,70,229,0); }
+  }
+  .calc-btn.ready { animation: pulse-ready 1.8s ease-in-out infinite; }
+  .calc-btn.ready:hover { animation: none; transform: translateY(-2px); }
+
+  /* ── IP Address List Preview ── */
+  .ip-list-wrap {
+    margin-top: 14px; background: #fafbff;
+    border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden;
+  }
+  .ip-list-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px; background: #eef2ff;
+    border-bottom: 1.5px solid #c7d2fe;
+    font-size: 0.68rem; text-transform: uppercase;
+    letter-spacing: 0.1em; color: #4338ca; font-weight: 700;
+  }
+  .ip-list-body {
+    padding: 12px 16px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.8rem; line-height: 2;
+  }
+  .ip-row { display: flex; align-items: baseline; gap: 12px; }
+  .ip-row .ip-addr { min-width: 115px; color: #3730a3; }
+  .ip-row.ip-boundary .ip-addr { font-weight: 700; font-size: 0.85rem; color: #1e1b4b; }
+  .ip-row .ip-label { font-size: 0.72rem; color: #334155; font-family: inherit; }
+  .ip-row.ip-reserved .ip-addr { color: #b45309; }
+  .ip-row.ip-reserved .ip-label { color: #d97706; }
+  .ip-row.ip-usable .ip-addr { color: #059669; }
+  .ip-row.ip-boundary-cross .ip-addr { color: #7c3aed; font-weight: 600; }
+  .ip-row.ip-boundary-cross .ip-label { color: #7c3aed; }
+  .ip-ellipsis { color: #334155; font-size: 0.78rem; padding: 0 0 0 4px; line-height: 1.8; font-style: italic; }
+
+  /* ── Error ── */
+  .error-box {
+    background: var(--red-lt); border: 1.5px solid #fca5a5;
+    border-radius: 12px; padding: 14px 18px;
+    font-size: 0.84rem; color: var(--red);
+    margin-top: 14px; display: none; line-height: 1.6;
+  }
+  .error-box.show { display: block; }
+
+  /* ── Results ── */
+  .results { display: none; margin-top: 20px; }
+  .results.show { display: block; }
+  .results-header {
+    font-size: 0.72rem; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--subtle);
+    margin-bottom: 12px; padding-left: 2px; font-weight: 700;
+  }
+
+  .summary-box {
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0, #ecfdf5);
+    border: 1.5px solid #6ee7b7;
+    border-radius: 12px; padding: 16px 20px;
+    font-size: 0.85rem; color: #064e3b; margin-bottom: 16px;
+    line-height: 1.7; font-weight: 500;
+  }
+
+  /* Quiz mode */
+  .quiz-overlay {
+    position: absolute; inset: -2px;
+    background: rgba(255,255,255,0.98);
+    backdrop-filter: blur(6px);
+    border-radius: 12px;
+    display: flex; flex-direction: row;
+    align-items: center; justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 16px; z-index: 10;
+    padding: 24px 32px;
+  }
+  .quiz-guess-input {
+    font-size: 1.4rem; font-weight: 700;
+    text-align: center; width: 120px;
+    padding: 8px 12px; border-radius: 10px;
+    border: 2px solid #c7d2fe;
+    font-family: 'JetBrains Mono', monospace;
+    color: #3730a3;
+  }
+  .quiz-guess-input:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.15); }
+  .quiz-result-msg { font-size: 0.9rem; font-weight: 700; margin-top: 4px; }
+  .quiz-result-msg.correct { color: #059669; }
+  .quiz-result-msg.wrong   { color: #dc2626; }
+
+  /* ── IP Bar ── */
+  .ip-bar-wrap {
+    background: #fff; border: 1.5px solid var(--border);
+    border-radius: 12px; padding: 18px 20px; margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .ip-bar-title {
+    font-size: 0.7rem; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--subtle); margin-bottom: 12px; font-weight: 700;
+  }
+  .ip-bar {
+    display: flex; height: 36px; border-radius: 10px;
+    overflow: visible; border: 1.5px solid var(--border);
+    margin-bottom: 12px; position: relative;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .ip-bar .ip-bar-seg:first-child { border-radius: 10px 0 0 10px; }
+  .ip-bar .ip-bar-seg:last-child  { border-radius: 0 10px 10px 0; }
+  .ip-bar .ip-bar-seg:only-child  { border-radius: 10px; }
+  .ip-bar-legend { display: flex; flex-wrap: wrap; gap: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.76rem; color: #334155; font-weight: 500; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 4px; flex-shrink: 0; }
+
+  /* ── Results hierarchy ── */
+  .az-results-header {
+    display: flex; align-items: center; gap: 10px;
+    margin: 22px 0 12px; padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+  }
+  .az-results-header h3 {
+    font-size: 0.72rem; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--subtle); font-weight: 700; flex: 1;
+  }
+  .az-results-header .subnet-count {
+    font-size: 0.72rem; color: var(--subtle);
+    background: var(--blue-lt); color: var(--blue);
+    border-radius: 20px; padding: 2px 10px; font-weight: 600;
+  }
+  .result-az {
+    background: #fff; border: 1.5px solid var(--border);
+    border-radius: 12px; margin-bottom: 0; overflow: visible;
+    box-shadow: var(--shadow-sm); transition: box-shadow 0.2s;
+    position: relative; min-height: 200px;
+  }
+  .result-az:hover { box-shadow: var(--shadow-md); }
+  .raz-1 { border-top: 3px solid #4f46e5; }
+  .raz-2 { border-top: 3px solid #7c3aed; }
+  .raz-3 { border-top: 3px solid #0891b2; }
+  .raz-4 { border-top: 3px solid #f97316; }
+  .result-az-header {
+    padding: 10px 18px; font-size: 0.8rem; font-weight: 700;
+    border-bottom: 1.5px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .result-az-header .az-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .raz-1 .result-az-header { background: linear-gradient(135deg, #eef2ff, #e0e7ff); color: #3730a3; border-color: #c7d2fe; }
+  .raz-1 .result-az-header .az-dot { background: #4f46e5; }
+  .raz-2 .result-az-header { background: linear-gradient(135deg, #f5f3ff, #ede9fe); color: #5b21b6; border-color: #ddd6fe; }
+  .raz-2 .result-az-header .az-dot { background: #7c3aed; }
+  .raz-3 .result-az-header { background: linear-gradient(135deg, #ecfeff, #cffafe); color: #155e75; border-color: #a5f3fc; }
+  .raz-3 .result-az-header .az-dot { background: #0891b2; }
+  .raz-4 .result-az-header { background: linear-gradient(135deg, #fff7ed, #ffedd5); color: #9a3412; border-color: #fed7aa; }
+  .raz-4 .result-az-header .az-dot { background: #f97316; }
+
+  .result-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; table-layout: fixed; }
+  .result-table th {
+    text-align: left; font-size: 0.65rem; color: var(--subtle);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 9px 14px; border-bottom: 1.5px solid var(--border);
+    background: #fafbff; white-space: nowrap; font-weight: 700;
+  }
+  .result-table td { padding: 11px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+  .result-table tr:last-child td { border-bottom: none; }
+  .result-table tr:hover td { background: #f8faff; }
+  .result-table .col-type  { width: 80px; }
+  .result-table .col-name  { width: 120px; }
+  .result-table .col-cidr  { width: 160px; }
+  .result-table .col-range { width: 220px; }
+  .result-table .col-total { width: 80px; text-align: right; }
+  .result-table .col-usable{ width: 80px; text-align: right; }
+
+  /* Block cell — used in def summary table */
+  .block-cell { display: flex; flex-direction: column; gap: 1px; }
+  .block-cell strong { font-size: 0.9rem; line-height: 1.1; }
+  .block-cell span { font-size: 0.75rem; color: #5b6178; }
+
+  /* Def summary table wrapper */
+  #defSummary table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+
+  .tag {
+    display: inline-block; padding: 2px 10px;
+    border-radius: 6px; font-size: 0.7rem; font-weight: 700;
+  }
+  .tag.public  { background: #eef2ff; color: #3730a3; border: 1.5px solid #c7d2fe; }
+  .tag.private { background: #d1fae5; color: #065f46; border: 1.5px solid #6ee7b7; }
+
+  .cidr-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700; color: #3730a3;
+    cursor: pointer; text-decoration: underline;
+    text-underline-offset: 3px; text-decoration-color: rgba(79,70,229,0.3);
+    transition: color 0.15s;
+  }
+  .cidr-val:hover { color: var(--blue); text-decoration-color: var(--blue); }
+
+  .reserved-ips { font-size: 0.75rem; color: #334155; }
+  .warn-text { color: #d97706; font-size: 0.8rem; }
+  .empty-az { padding: 14px 18px; font-size: 0.82rem; color: #334155; }
+
+  /* ── IP bar segment tooltip ── */
+  .ip-bar-seg { position: relative; }
+  .ip-bar-seg .seg-tip {
+    display: none; position: absolute;
+    bottom: calc(100% + 10px); left: 50%;
+    transform: translateX(-50%);
+    background: #1e1b4b; color: #fff;
+    font-size: 0.76rem; padding: 10px 14px;
+    border-radius: 10px; white-space: nowrap;
+    pointer-events: none; z-index: 100;
+    box-shadow: 0 8px 24px rgba(30,27,75,0.3);
+    line-height: 1.8; text-align: left;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .ip-bar-seg .seg-tip::after {
+    content: ''; position: absolute;
+    top: 100%; left: 50%; transform: translateX(-50%);
+    border: 7px solid transparent; border-top-color: #1e1b4b;
+  }
+  .ip-bar-seg:hover .seg-tip { display: block; }
+
+  .tip-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--blue-lt); color: var(--blue);
+    font-size: 0.6rem; font-weight: 700; cursor: help;
+    margin-left: 3px; vertical-align: middle; position: relative;
+  }
+  .tip-icon:hover::after {
+    content: attr(data-tip);
+    position: absolute; bottom: calc(100% + 6px); left: 50%;
+    transform: translateX(-50%);
+    background: #1e1b4b; color: #fff;
+    font-size: 0.72rem; padding: 6px 10px;
+    border-radius: 8px; white-space: nowrap;
+    pointer-events: none; z-index: 10;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.2); font-weight: normal;
+  }
+
+  /* ── Copy button ── */
+  .copy-btn {
+    background: var(--blue-lt); border: 1.5px solid #c7d2fe; cursor: pointer;
+    color: var(--blue); padding: 2px 8px; border-radius: 6px;
+    font-size: 0.76rem; line-height: 1.4; vertical-align: middle;
+    margin-left: 6px; font-family: inherit; display: inline-block;
+    white-space: nowrap; font-weight: 600; transition: all 0.15s;
+  }
+  .copy-btn:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .exp-btn {
+    font-family: inherit; font-size: 0.76rem; font-weight: 600;
+    padding: 5px 11px; border-radius: 6px; cursor: pointer;
+    border: 1.5px solid #e2e8f0;
+    background: #f8fafc; color: #475569;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+  .exp-btn:hover { background: #f1f5f9; border-color: #cbd5e1; color: #1e293b; }
+  .copy-btn.copied { color: var(--green); background: var(--green-lt); border-color: #6ee7b7; }
+
+  /* ── Reset buttons ── */
+  .reset-bar { display: flex; gap: 10px; margin-top: 20px; }
+  .reset-btn {
+    flex: 1; padding: 10px;
+    border-radius: 10px; border: 1.5px solid var(--border);
+    font-family: inherit; font-size: 0.84rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; background: #fff;
+  }
+  .reset-btn.reset-all  { color: var(--red); border-color: #fca5a5; }
+  .reset-btn.reset-all:hover  { background: var(--red-lt); border-color: var(--red); transform: translateY(-1px); }
+  .reset-btn.reset-soft { color: #334155; }
+  .reset-btn.reset-soft:hover { background: #f8fafc; border-color: #334155; transform: translateY(-1px); }
+
+  /* ── Explainer ── */
+  .explainer {
+    background: #fff; border: 1.5px solid var(--border);
+    border-radius: 14px; padding: 20px 22px;
+    margin-top: 14px; border-left: 4px solid #f59e0b;
+    box-shadow: var(--shadow-sm);
+  }
+  .explainer h3 {
+    font-size: 0.72rem; text-transform: uppercase;
+    letter-spacing: 0.1em; color: #92400e; margin-bottom: 16px; font-weight: 700;
+  }
+  .kv {
+    display: grid; grid-template-columns: 160px 1fr;
+    gap: 8px 16px; font-size: 0.84rem; line-height: 1.6;
+  }
+  .kv .k { color: var(--subtle); font-size: 0.8rem; font-weight: 600; }
+  #explainerBox { margin-top: 12px; }
+  #quizToggleBtn {
+    background: linear-gradient(135deg,#4f46e5,#7c3aed);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 20px;
+    font-family: inherit;
+    font-size: 0.84rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(79,70,229,0.3);
+  }
+  #quizToggleBtn:disabled {
+    background: #e2e8f0;
+    color: #94a3b8;
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 1;
+  }
+  #quizToggleBtn:not(:disabled):hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+  }
+
+  /* ── Architecture Diagram ── */
+  .arch-diagram { margin-top: 22px; display: none; }
+  .arch-diagram.show { display: block; }
+  .igw-row { text-align: center; margin-bottom: 14px; }
+  .igw-box {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+    border: 1.5px solid #c7d2fe;
+    border-radius: 10px; padding: 8px 20px;
+    font-size: 0.8rem; color: #3730a3; font-weight: 700;
+    box-shadow: var(--shadow-sm);
+  }
+  .arch-arrow { text-align: center; color: #a5b4fc; font-size: 1.2rem; margin: 6px 0; }
+  .vpc-outer {
+    border: 2px dashed #a5b4fc; border-radius: 16px;
+    padding: 20px; background: rgba(238,242,255,0.4); position: relative;
+  }
+  .vpc-outer-label {
+    position: absolute; top: -12px; left: 20px;
+    background: var(--bg); padding: 0 10px;
+    font-size: 0.7rem; font-weight: 700; color: #4338ca; letter-spacing: 0.08em;
+  }
+  .vpc-outer-cidr {
+    position: absolute; top: -12px; right: 20px;
+    background: var(--bg); padding: 0 10px;
+    font-size: 0.7rem; color: var(--subtle);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .az-columns { display: grid; gap: 14px; }
+  .diag-az-box {
+    border: 1.5px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; background: #fff; position: relative;
+  }
+  .diag-az-box.daz-1 { border-color: #a5b4fc; background: linear-gradient(135deg, #f0f4ff, #eef2ff); }
+  .diag-az-box.daz-2 { border-color: #c4b5fd; background: linear-gradient(135deg, #f6f4ff, #f5f3ff); }
+  .diag-az-box.daz-3 { border-color: #67e8f9; background: linear-gradient(135deg, #f0fdff, #ecfeff); }
+  .diag-az-box.daz-4 { border-color: #fdba74; background: linear-gradient(135deg, #fff8f0, #fff7ed); }
+  .diag-az-label {
+    font-size: 0.65rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+  }
+  .daz-1 .diag-az-label { color: #3730a3; }
+  .daz-2 .diag-az-label { color: #5b21b6; }
+  .daz-3 .diag-az-label { color: #155e75; }
+  .daz-4 .diag-az-label { color: #9a3412; }
+  .diag-az-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .daz-1 .diag-az-dot { background: #4f46e5; }
+  .daz-2 .diag-az-dot { background: #7c3aed; }
+  .daz-3 .diag-az-dot { background: #0891b2; }
+  .daz-4 .diag-az-dot { background: #f97316; }
+  .diag-subnet {
+    border-radius: 10px; padding: 10px 14px;
+    margin-bottom: 8px; position: relative;
+    border: 1.5px solid transparent; transition: transform 0.15s;
+  }
+  .diag-subnet:last-child { margin-bottom: 0; }
+  .diag-subnet:hover { transform: translateX(2px); }
+  .diag-subnet.pub  { background: linear-gradient(135deg, #dbeafe, #eff6ff); border-color: #93c5fd; }
+  .diag-subnet.priv { background: linear-gradient(135deg, #d1fae5, #ecfdf5); border-color: #6ee7b7; }
+  .diag-subnet-type { font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 3px; }
+  .pub .diag-subnet-type  { color: #1d4ed8; }
+  .priv .diag-subnet-type { color: #059669; }
+  .diag-subnet-name { font-size: 0.84rem; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+  .diag-subnet-cidr { font-size: 0.76rem; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+  .pub  .diag-subnet-cidr { color: #1d4ed8; }
+  .priv .diag-subnet-cidr { color: #059669; }
+  .diag-subnet-range { font-size: 0.68rem; color: #334155; margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+  .diag-subnet-meta {
+    position: absolute; top: 10px; right: 12px;
+    font-size: 0.65rem; color: #334155; text-align: right; line-height: 1.6;
+  }
+  .diag-gap {
+    border: 1.5px dashed #fbbf24; border-radius: 8px;
+    padding: 6px 12px; margin-bottom: 8px;
+    background: repeating-linear-gradient(45deg,#fefce8,#fefce8 4px,#fef9c3 4px,#fef9c3 8px);
+    font-size: 0.68rem; color: #92400e; text-align: center; font-weight: 600;
+  }
+  /* AWS Cloud / Region wrappers */
+  .diag-aws-cloud {
+    border: 2px solid #e2e8f0; border-radius: 18px;
+    padding: 18px; margin-bottom: 16px;
+    background: linear-gradient(135deg, #f8faff, #f0f4ff);
+    position: relative;
+  }
+  .diag-aws-region {
+    border: 2px dashed #c7d2fe; border-radius: 14px;
+    padding: 16px; margin-top: 10px;
+    background: rgba(255,255,255,0.6); position: relative;
+  }
+  .diag-layer-label {
+    font-size: 0.68rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    padding: 2px 10px; border-radius: 20px; display: inline-block;
+    margin-bottom: 6px;
+  }
+  .cloud-label { background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; }
+  .region-label { background: #ecfeff; color: #155e75; border: 1px solid #a5f3fc; }
+
+  /* Router */
+  /* NAT Gateway */
+  .diag-nat-gw {
+    margin-top: 10px; padding: 7px 12px;
+    background: linear-gradient(135deg, #fdf4ff, #fae8ff);
+    border: 1.5px solid #e879f9; border-radius: 8px;
+    font-size: 0.76rem; color: #701a75; font-weight: 700;
+    text-align: center;
+  }
+
+  /* EC2 instances */
+  .diag-ec2-row {
+    display: flex; gap: 6px; margin: 8px 0 4px;
+    flex-wrap: wrap;
+  }
+  .diag-ec2 {
+    font-size: 0.7rem; background: rgba(255,255,255,0.7);
+    border: 1px solid rgba(0,0,0,0.1); border-radius: 6px;
+    padding: 2px 8px; color: #334155; font-weight: 600;
+  }
+
+  /* Route table notes */
+  .diag-route-note {
+    font-size: 0.67rem; font-weight: 600;
+    padding: 3px 8px; border-radius: 5px; margin-top: 5px;
+    display: inline-block; font-family: 'JetBrains Mono', monospace;
+  }
+  .pub-route  { background: rgba(219,234,254,0.8); color: #1d4ed8; border: 1px solid #93c5fd; }
+  .priv-route { background: rgba(233,213,255,0.8); color: #701a75; border: 1px solid #e879f9; }
+
+  .diag-legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 16px; }
+  .diag-legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: #334155; font-weight: 500; }
+  .diag-legend-dot { width: 12px; height: 12px; border-radius: 4px; flex-shrink: 0; }
+
+  /* ── Quick ref output ── */
+  .quick-out-box {
+    display: grid; grid-template-columns: 1fr 1fr;
+    border: 1.5px solid var(--border); border-radius: 12px;
+    overflow: hidden; background: #fafbff;
+    box-shadow: var(--shadow-sm);
+  }
+  .quick-out-left {
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    padding: 20px 14px; border-right: 1.5px solid var(--border);
+    background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  }
+  .quick-out-right {
+    display: flex; flex-direction: column;
+    justify-content: center; padding: 16px 18px; gap: 8px;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 700px) {
+    .vpc-standalone { padding: 16px 10px; }
+    .top-row { grid-template-columns: 1fr; }
+    .def-headers { display: none; }
+
+    /* Fix subnet rows — name full width, then type+ips+x in a row */
+    .subnet-def { grid-template-columns: 1fr; gap: 8px; }
+    .subnet-def > input[type="text"] { grid-column: 1; }
+    .subnet-def-inner-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px;
+      gap: 8px;
+    }
+    .subnet-def-inner-row > * { min-width: 0; }
+    /* Make × button more tappable on mobile */
+    .remove-btn { width: 44px; min-width: 44px; height: 44px; font-size: 1.2rem; }
+
+    .card { padding: 14px 16px; }
+    .page-header { padding: 24px 16px 20px; border-radius: 14px; }
+    .page-header h1 { font-size: 1.2rem; }
+    .page-header p { font-size: 0.82rem; }
+
+    .cidr-input-row { grid-template-columns: minmax(0, 1fr) 110px; }
+
+    /* Nudge tooltip — keep absolute above the prefix dropdown, just smaller */
+    #prefixNudgeRow { bottom: calc(100% + 8px); }
+    .prefix-nudge { font-size: 0.72rem; padding: 5px 12px; }
+
+    /* Results header — wrap buttons onto multiple lines */
+    #resultsTopBar { flex-direction: column; align-items: flex-start; }
+    #exportBtns { width: 100%; }
+    #exportBtns .exp-btn { flex: 1 1 calc(50% - 6px); text-align: center; }
+    #exportBtns .exp-divider { display: none; }
+    .exp-btn { font-size: 0.78rem; padding: 8px 10px; }
+
+    /* AZ results table — convert to cards on mobile */
+    .result-table, .result-table thead, .result-table tbody,
+    .result-table th, .result-table td, .result-table tr { display: block; width: 100%; }
+    .result-table thead, .result-table thead tr { display: none !important; }
+    .result-table tr {
+      background: #fff; border: 1.5px solid var(--border);
+      border-radius: 14px; padding: 10px 14px; margin-bottom: 10px;
+      box-shadow: 0 2px 8px rgba(31,41,55,0.05);
+    }
+    .result-table td {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 12px; border: 0; padding: 7px 0;
+      text-align: left; min-width: 0;
+    }
+    .result-table td:not(:last-child) { border-bottom: 1px solid rgba(99,102,241,0.08); }
+    .result-table td::before {
+      content: attr(data-label);
+      flex: 0 0 44%; font-size: 0.68rem; font-weight: 700;
+      letter-spacing: 0.05em; text-transform: uppercase; color: #7c83b6;
+    }
+    .result-table td > * { min-width: 0; }
+    /* Keep CIDR cell wrappable */
+    .result-table td[data-label="CIDR"] { white-space: normal !important; flex-wrap: wrap; }
+    .result-table td[data-label="CIDR"]::before { flex: 0 0 44%; }
+
+    /* Def summary table — convert to cards on mobile */
+    #defSummary table, #defSummary thead, #defSummary tbody,
+    #defSummary th, #defSummary td, #defSummary tr { display: block; width: 100%; }
+    #defSummary thead { display: none; }
+    #defSummary tr {
+      background: #fff; border: 1.5px solid var(--border);
+      border-radius: 14px; padding: 10px 14px; margin-bottom: 12px;
+      box-shadow: 0 2px 10px rgba(31,41,55,0.05);
+    }
+    #defSummary td {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 12px; border: 0; padding: 7px 0; text-align: left; min-width: 0;
+    }
+    #defSummary td:not(:last-child) { border-bottom: 1px solid rgba(99,102,241,0.08); }
+    #defSummary td::before {
+      content: attr(data-label);
+      flex: 0 0 44%; font-size: 0.68rem; font-weight: 700;
+      letter-spacing: 0.05em; text-transform: uppercase; color: #7c83b6;
+    }
+    #defSummary td > * { min-width: 0; }
+    .block-cell strong { font-size: 1rem; }
+    .block-cell span { font-size: 0.78rem; }
+
+    /* Architecture diagram — single column */
+    .diag-aws-cloud { padding: 12px; }
+    .diag-aws-region { padding: 10px; }
+    .az-columns { grid-template-columns: 1fr !important; }
+    .diag-subnet-meta { position: static; margin-top: 4px; text-align: left; }
+
+    .reset-bar { flex-direction: column; }
+    .az-title { flex-direction: column; align-items: flex-start; gap: 4px; }
+    #explainerBox > div { grid-template-columns: 1fr !important; }
+    .kv { grid-template-columns: 80px 1fr; }
+    .quick-out-left { border-right: none; border-bottom: 1.5px solid var(--border); }
+    .results-header { font-size: 0.9rem; }
+    .ip-bar-wrap { padding: 14px; }
+    .ip-bar { height: 28px; }
+    .calc-btn { font-size: 0.95rem; padding: 13px; }
+    #useCaseGrid { grid-template-columns: 1fr !important; }
+    .quiz-overlay { flex-direction: column; padding: 24px 16px; }
+    .progress-bar-wrap { padding: 6px 10px; margin: 0 -10px 16px -10px; }
+    .progress-step { padding: 4px 5px; gap: 4px; font-size: 0.68rem; }
+    .progress-step .step-label { display: none; }
+    .progress-step.active .step-label { display: inline; }
+    .progress-connector { width: 12px; }
+    .vpc-hint { font-size: 0.8rem; }
+    .reset-btn { width: 100%; text-align: center; }
+    .result-az { overflow-x: auto; }
+  }
+</style>
+<div class="vpc-standalone">
+<div class="container">
+
+  <!-- Header (centered) -->
+  <div class="page-header">
+    <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:10px;">🎓 Interactive Learning Tool</div>
+    <h1>VPC Subnet Calculator</h1>
+    <p style="font-size:0.95rem;margin-top:4px;margin-bottom:12px;">Master AWS networking by <strong style="color:#fff;">building</strong> it — define subnets, pick your VPC size, assign to AZs, and get real CIDRs instantly.</p>
+    <div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap;font-size:0.78rem;color:rgba(255,255,255,0.65);margin-top:4px;">
+      <span>📐 CIDR auto-sizing</span>
+      <span>🗺️ AZ assignment</span>
+      <span>📊 Visual diagrams</span>
+      <span>🔍 IP explorer</span>
+    </div>
+    <p style="margin-top:12px;font-size:0.72rem;color:rgba(255,255,255,0.45);">Educational use only · Not affiliated with Amazon Web Services</p>
+  </div>
+
+  <!-- Sticky Progress Bar -->
+  <div class="progress-bar-wrap" id="progressBarWrap">
+    <div class="progress-steps">
+      <div class="progress-step active" id="prog-1">
+        <div class="step-num"><span>1</span></div>
+        <span class="step-label">Define Subnets</span>
+      </div>
+      <div class="progress-connector" id="conn-1"></div>
+      <div class="progress-step" id="prog-2">
+        <div class="step-num"><span>2</span></div>
+        <span class="step-label">VPC Config</span>
+      </div>
+      <div class="progress-connector" id="conn-2"></div>
+      <div class="progress-step" id="prog-3">
+        <div class="step-num"><span>3</span></div>
+        <span class="step-label">Assign AZs</span>
+      </div>
+      <div class="progress-connector" id="conn-3"></div>
+      <div class="progress-step" id="prog-4">
+        <div class="step-num"><span>4</span></div>
+        <span class="step-label">Calculate</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Subnet Size Reference -->
+  <div class="card ref">
+    <div class="card-header">
+      <div class="card-badge badge-ref">~</div>
+      <h2>Subnet Size Reference: How many IPs do I need?</h2>
+      <button onclick="toggleQuickRef(this)" style="margin-left:auto;background:none;border:1px solid #e2e8f0;border-radius:6px;padding:3px 10px;font-size:0.75rem;color:#334155;cursor:pointer;font-family:inherit;" id="quickRefToggleBtn">▲ Hide</button>
+    </div>
+    <div id="quickRefBody">
+    <p style="font-size:0.78rem;color:#334155;margin-bottom:14px;line-height:1.6;">
+      Not sure what prefix to use? Enter your required usable IPs below and we'll show the smallest valid AWS subnet that fits. Use this as a guide when filling in Step 1.
+    </p>
+    <div class="top-row">
+      <div>
+        <label>Usable IPs needed</label>
+        <div class="pill-row">
+          <span class="pill" onclick="setQuick(15)">15</span>
+          <span class="pill" onclick="setQuick(50)">50</span>
+          <span class="pill" onclick="setQuick(100)">100</span>
+          <span class="pill" onclick="setQuick(250)">250</span>
+        </div>
+        <input type="number" id="quickUsable" min="0" value="50" oninput="updateQuickCalc()" />
+        <div class="help">AWS always reserves 5 IPs per subnet (network, router, DNS, future use, broadcast).</div>
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <div class="quick-out-box">
+          <div class="quick-out-left">
+            <div style="font-size:0.65rem;color:#334155;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">Smallest</div>
+            <div id="quickPrefix" style="font-size:2.2rem;font-weight:bold;color:#2563eb;">—</div>
+          </div>
+          <div class="quick-out-right">
+            <div style="font-size:0.65rem;color:#334155;text-transform:uppercase;letter-spacing:0.1em;">Details</div>
+            <div style="font-size:0.84rem;color:#334155;">Total IPs: <strong id="quickTotal" style="color:#1a1a2e;">—</strong></div>
+            <div style="font-size:0.84rem;color:#334155;">Usable:&nbsp;&nbsp;&nbsp;&nbsp;<strong id="quickUsableOut" style="color:#1a1a2e;">—</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Prefix reverse lookup -->
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid #e2e8f0;">
+      <label style="margin-bottom:8px;">Or click a prefix to see its IP count &nbsp;<span style="font-weight:normal;color:#334155;font-size:0.8rem;">— AWS VPC CIDR must be /16 – /28</span></label>
+      <div id="prefixPillGroup" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+        <span class="pill" onclick="showPrefixInfo(event, 16)">/16</span>
+        <span class="pill" onclick="showPrefixInfo(event, 17)">/17</span>
+        <span class="pill" onclick="showPrefixInfo(event, 18)">/18</span>
+        <span class="pill" onclick="showPrefixInfo(event, 19)">/19</span>
+        <span class="pill" onclick="showPrefixInfo(event, 20)">/20</span>
+        <span class="pill" onclick="showPrefixInfo(event, 21)">/21</span>
+        <span class="pill" onclick="showPrefixInfo(event, 22)">/22</span>
+        <span class="pill" onclick="showPrefixInfo(event, 23)">/23</span>
+        <span class="pill" onclick="showPrefixInfo(event, 24)">/24</span>
+        <span class="pill" onclick="showPrefixInfo(event, 25)">/25</span>
+        <span class="pill" onclick="showPrefixInfo(event, 26)">/26</span>
+        <span class="pill" onclick="showPrefixInfo(event, 27)">/27</span>
+        <span class="pill" onclick="showPrefixInfo(event, 28)">/28</span>
+      </div>
+      <div id="prefixInfo" style="display:none;">
+        <div class="quick-out-box">
+          <div class="quick-out-left">
+            <div style="font-size:0.65rem;color:#334155;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;font-weight:700;">Block</div>
+            <div id="piPrefix" style="font-size:2.2rem;font-weight:bold;color:#4f46e5;">—</div>
+          </div>
+          <div class="quick-out-right">
+            <div style="font-size:0.65rem;color:#334155;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;">Details</div>
+            <div style="font-size:0.84rem;color:#334155;">Total IPs: <strong id="piTotal" style="color:#1e1b4b;">—</strong></div>
+            <div style="font-size:0.84rem;color:#334155;">Usable:&nbsp;&nbsp;&nbsp;&nbsp;<strong id="piUsable" style="color:#1e1b4b;">—</strong></div>
+            <div style="font-size:0.78rem;color:#334155;margin-top:2px;">Formula: <span id="piFormula" style="font-family:'JetBrains Mono',monospace;color:#7c3aed;font-weight:600;">—</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div><!-- end quickRefBody -->
+  </div>
+
+  <!-- Quiz Mode Card -->
+  <div class="card" id="quizCard" style="margin-bottom:16px;position:relative;overflow:hidden;">
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#7c3aed,#4f46e5,#0891b2);"></div>
+    <div class="card-header" style="margin-bottom:10px;">
+      <div class="card-badge" style="background:linear-gradient(135deg,#4f46e5,#7c3aed);box-shadow:0 2px 8px rgba(79,70,229,0.3);">🧠</div>
+      <h2>Quiz Mode</h2>
+    </div>
+    <p style="font-size:0.84rem;color:#334155;line-height:1.6;margin:0 0 14px;">
+      Toggle quiz mode on before calculating — results will be hidden and you'll guess the CIDR prefix for each AZ yourself. A great way to test your understanding of IP math.
+    </p>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <button id="quizToggleBtn" onclick="toggleQuizMode()">🧠 Enter Quiz Mode</button>
+      <span id="quizToggleHint" style="font-size:0.78rem;color:#6d28d9;font-style:italic;">Toggle on before calculating to challenge yourself.</span>
+    </div>
+  </div>
+
+  <!-- Use Case Selector -->
+  <div class="card" id="useCaseCard" style="margin-bottom:16px;position:relative;overflow:hidden;">
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#f59e0b,#f97316,#ec4899);"></div>
+    <div class="card-header" style="margin-bottom:6px;">
+      <div class="card-badge" style="background:linear-gradient(135deg,#f59e0b,#f97316);box-shadow:0 2px 8px rgba(245,158,11,0.3);">🎯</div>
+      <h2>What are you building?</h2>
+    </div>
+    <div id="useCaseGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:4px;"></div>
+    <div id="useCaseInfo" style="display:none;margin-top:14px;padding:14px 16px;border-radius:10px;font-size:0.82rem;line-height:1.7;"></div>
+  </div>
+
+  <!-- Step 1 -->
+  <div class="card step-1" id="step1">
+    <div class="card-header">
+      <div class="card-badge badge-blue">1</div>
+      <h2>Define Subnets</h2>
+    </div>
+
+    <div class="def-headers">
+      <span class="col-label">Name</span>
+      <span class="col-label">Type</span>
+      <span class="col-label">Usable IPs needed</span>
+      <span></span>
+    </div>
+    <div class="subnet-def-list" id="subnetDefs"></div>
+    <button class="add-btn" onclick="addSubnetDef()">+ Add subnet</button>
+    <div id="defSummary"></div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="card step-2">
+    <div class="card-header">
+      <div class="card-badge badge-violet">2</div>
+      <h2>VPC Configuration</h2>
+    </div>
+    <div id="vpcHint" class="vpc-hint" style="margin-bottom:14px;"></div>
+
+    <div class="top-row" id="vpcCidrRow">
+      <div>
+        <label>VPC CIDR</label>
+        <div class="cidr-input-row">
+          <input type="text" id="vpcIp" placeholder="e.g. 10.0.0.0" value="10.0.0.0"
+            oninput="syncVpcCidr(); renderAZs(); updateVpcHint(); clearResults();" />
+          <div style="position:relative;" id="prefixSelectWrap" class="prefix-select-wrap">
+            <div id="prefixNudgeRow" style="visibility:hidden;">
+              <div class="prefix-nudge" style="animation:bounce-down 1.2s ease-in-out infinite;">
+                <span id="prefixNudgeText"></span>
+              </div>
+            </div>
+            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#334155;font-size:0.9rem;pointer-events:none;">/</span>
+            <select id="vpcPrefix" onchange="syncVpcCidr(); syncQuickFromPrefix(); renderAZs(); updateVpcHint(); clearResults();"
+              style="padding-left:22px;">
+              <option value="16" selected>16</option>
+              <option value="17">17</option>
+              <option value="18">18</option>
+              <option value="19">19</option>
+              <option value="20">20</option>
+              <option value="21">21</option>
+              <option value="22">22</option>
+              <option value="23">23</option>
+              <option value="24">24</option>
+              <option value="25">25</option>
+              <option value="26">26</option>
+              <option value="27">27</option>
+              <option value="28">28</option>
+            </select>
+          </div>
+        </div>
+        <input type="hidden" id="vpcCidr" value="10.0.0.0/16" />
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+          <span class="pill" onclick="setVpcIp('10.0.0.0')">10.0.0.0</span>
+          <span class="pill" onclick="setVpcIp('10.1.0.0')">10.1.0.0</span>
+          <span class="pill" onclick="setVpcIp('172.16.0.0')">172.16.0.0</span>
+          <span class="pill" onclick="setVpcIp('192.168.0.0')">192.168.0.0</span>
+        </div>
+      </div>
+      <div>
+        <label>Availability Zones</label>
+        <select id="numAZ" onchange="hasStep2Touched = true; renderAZs(); updateVpcHint(); clearResults(); updateProgress();">
+          <option value="1">1 AZ</option>
+          <option value="2" selected>2 AZs</option>
+          <option value="3">3 AZs</option>
+          <option value="4">4 AZs</option>
+        </select>
+      </div>
+    </div>
+    <div id="vpcIpHint" style="margin-top:6px;color:#334155;line-height:1.5;font-size:0.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="card step-3">
+    <div class="card-header">
+      <div class="card-badge badge-teal">3</div>
+      <h2>Assign Subnets to Availability Zones</h2>
+    </div>
+    <div style="margin-bottom:14px;border-radius:8px;overflow:hidden;border:1px solid #99f6e4;">
+      <!-- Collapsed header - always visible -->
+      <button onclick="toggleAzExplainer(this)"
+        style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f0fdfa;border:none;cursor:pointer;font-family:inherit;font-size:0.82rem;color:#0f766e;font-weight:600;text-align:left;">
+        <span>💡 Why assign subnets to Availability Zones?</span>
+        <span id="azExplainerChevron" style="font-size:0.75rem;color:#0d9488;transition:transform 0.2s;">▼ show</span>
+      </button>
+      <!-- Expandable body - hidden by default -->
+      <div id="azExplainerBody" style="display:none;padding:10px 14px 12px;background:#f0fdfa;font-size:0.8rem;color:#0f766e;line-height:1.7;border-top:1px solid #99f6e4;">
+        In AWS, every subnet lives in exactly <strong>one AZ</strong>. AZs are physically separate data centres in a region (e.g. <strong>us-east-1a</strong>, <strong>us-east-1b</strong> in the US East region). Spreading subnets across multiple AZs means your app stays up even if one data centre has an outage. This is called <em>high availability</em>.<br><br>
+        Each AZ gets its <strong>own separate CIDR block</strong> carved from the VPC. The same subnet in 2 AZs uses 2x the IPs.
+        <div style="margin-top:8px;font-size:0.75rem;color:#0d9488;">All subnets are assigned to all AZs by default. Click a chip to remove it from that AZ.</div>
+      </div>
+    </div>
+    <div class="az-section" id="azToggles"></div>
+  </div>
+
+  <button class="calc-btn" onclick="calculate()">Calculate CIDRs →</button>
+
+  <div id="errorBox" class="error-box"></div>
+
+  <!-- Results -->
+  <div id="results" class="results">
+    <div id="resultsTopBar" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <div class="results-header" style="margin-bottom:0;">Results</div>
+      <div id="exportBtns" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <button onclick="copyResults(this)" class="exp-btn">Copy Results</button>
+        <div class="exp-divider" style="width:1px;height:20px;background:#e2e8f0;"></div>
+        <button onclick="copyTerraform(this)" class="exp-btn">Copy Terraform</button>
+        <button onclick="copyCloudFormation(this)" class="exp-btn">Copy CloudFormation</button>
+        <button onclick="copyAwsCli(this)" class="exp-btn">Copy AWS CLI</button>
+        <button onclick="copyTaggingStrategy(this)" class="exp-btn">Copy Naming Guide</button>
+      </div>
+    </div>
+    <div id="summaryBox" class="summary-box"></div>
+
+    <!-- IP Bar -->
+    <div class="ip-bar-wrap" id="ipBarWrap">
+      <div class="ip-bar-title">VPC address space usage</div>
+      <div class="ip-bar" id="ipBar"></div>
+      <div class="ip-bar-legend" id="ipBarLegend"></div>
+    </div>
+
+    <div id="azResults"></div>
+
+    <div id="explainer" class="explainer" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <h3>💡 CIDR Explainer - click any CIDR above to inspect it</h3>
+        <button onclick="document.getElementById('explainer').style.display='none'" style="background:none;border:1px solid #e2e8f0;border-radius:6px;width:26px;height:26px;cursor:pointer;color:#334155;font-size:1rem;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;" title="Close">×</button>
+      </div>
+      <div class="kv" id="explainerKv"></div>
+      <div id="explainerWhy" style="display:none;margin-top:14px;padding:12px 16px;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;"></div>
+      <div id="explainerBox"></div>
+    </div>
+
+    <!-- Architecture Diagram -->
+    <div id="archDiagram" class="arch-diagram">
+      <div class="card" style="border-left:4px solid #0ea5e9;margin-top:14px;">
+        <div class="card-header" style="margin-bottom:14px;">
+          <div class="card-badge" style="background:#0ea5e9;">🏗</div>
+          <h2>Architecture Diagram</h2>
+        </div>
+        <div id="archDiagramInner"></div>
+      </div>
+    </div>
+
+    <div class="reset-bar">
+      <button class="reset-btn reset-soft" onclick="resetSoft()">↺ Reset Results &amp; Toggles</button>
+      <button class="reset-btn reset-all"  onclick="resetAll()">✕ Reset Everything</button>
+    </div>
+  </div>
+
+</div>
+<script>
+  // ── Security ──
+  function esc(s) {
+    return String(s ?? "").replace(/[&<>"']/g, m =>
+      ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])
+    );
+  }
+
+  // ── CIDR Math ──
+  // ── Progress Bar ──
+  function updateProgress() {
+    const step1Done = defs.length > 0 && defs.some(d => d.ips > 0);
+    const vpcCidr = document.getElementById('vpcCidr')?.value || '';
+    const vpc = parseVpc(vpcCidr);
+    const step2Done = step1Done && !!vpc && hasStep2Touched;
+
+    const numAZ = parseInt(document.getElementById('numAZ')?.value || '0', 10);
+    const anyActiveCurrentAZ = Array.from({ length: numAZ }, (_, i) => azToggles[i + 1])
+      .some(set => set && set.size > 0);
+
+    const resultsShowing = !!document.getElementById('results')?.classList.contains('show');
+    const step3Done = step2Done && anyActiveCurrentAZ;
+    const step4Done = step3Done && hasCalculated && resultsShowing;
+
+    const steps = [
+      { id: 'prog-1', done: step1Done,  active: !step1Done },
+      { id: 'prog-2', done: step2Done,  active: step1Done  && !step2Done },
+      { id: 'prog-3', done: step3Done,  active: step2Done  && !step3Done },
+      { id: 'prog-4', done: step4Done,  active: step3Done  && !step4Done },
+    ];
+    steps.forEach(s => {
+      const el = document.getElementById(s.id);
+      if (!el) return;
+      el.className = 'progress-step' + (s.done ? ' done' : s.active ? ' active' : '');
+    });
+    ['conn-1','conn-2','conn-3'].forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (el) el.className = 'progress-connector' + (steps[i].done ? ' done' : '');
+    });
+    const calcBtn = document.querySelector('.calc-btn');
+    if (calcBtn) {
+      if (step3Done && !step4Done) calcBtn.classList.add('ready');
+      else calcBtn.classList.remove('ready');
+    }
+  }
+
+  function parseVpc(cidr) {
+    const [ip, prefix] = (cidr || "").trim().split('/');
+    if (!ip || !prefix) return null;
+    const parts = ip.split('.').map(Number);
+    if (parts.length !== 4 || parts.some(p => isNaN(p) || p < 0 || p > 255)) return null;
+    const pre = parseInt(prefix, 10);
+    if (isNaN(pre) || pre < 16 || pre > 28) return null;  // AWS VPC: /16 min, /28 max
+    const ipInt = ((parts[0]<<24)|(parts[1]<<16)|(parts[2]<<8)|parts[3]) >>> 0;
+    // Validate host bits are zero — e.g. 10.0.1.0/16 is invalid, must be 10.0.0.0/16
+    const mask = pre === 0 ? 0 : (0xFFFFFFFF << (32 - pre)) >>> 0;
+    if ((ipInt & ~mask) !== 0) return null;
+    return { ipInt, prefix: pre, totalIPs: Math.pow(2, 32 - pre) };
+  }
+
+  function nextPow2(n) { let p = 1; while (p < n) p *= 2; return p; }
+  function intToIp(n) { return [(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255].join('.'); }
+  function alignUp(s, b) { const r = s % b; return r === 0 ? s : s + (b - r); }
+
+  function smallestAwsSubnet(usableNeeded) {
+    const raw = parseInt(usableNeeded, 10);
+    const u = isNaN(raw) ? 0 : raw;
+
+    // Treat 0 as "not set"
+    if (u <= 0) return { blockSize: 0, prefix: null, usable: 0, impossible: false };
+
+    // AWS hard limits: /28 (16 IPs, 11 usable) to /16 (65536 IPs, 65531 usable)
+    const MIN_BLOCK = 16;      // /28 — smallest AWS subnet
+    const MAX_USABLE = 65531;  // /16 — largest AWS subnet (65536 - 5 reserved)
+
+    // Reject requests that exceed what a single AWS subnet can ever provide
+    if (u > MAX_USABLE) {
+      return { blockSize: 0, prefix: null, usable: 0, impossible: true, requestedIps: u };
+    }
+
+    let blockSize = nextPow2(u + 5);
+    if (blockSize < MIN_BLOCK) blockSize = MIN_BLOCK;
+
+    const prefix = 32 - Math.log2(blockSize);
+    const usable = blockSize - 5;
+
+    return { blockSize, prefix, usable, impossible: false };
+  }
+
+  function awsReservedIps(s, e) {
+    return [intToIp(s), intToIp(s+1), intToIp(s+2), intToIp(s+3), intToIp(e-1)];
+  }
+
+
+  // ══════════════════════════════════════════
+  // USE CASE SELECTOR
+  // ══════════════════════════════════════════
+  const USE_CASES = [
+    {
+      id: 'webapp',
+      icon: '🌐',
+      label: 'Simple Web App',
+      color: '#0891b2', colorLt: '#ecfeff', colorBorder: '#a5f3fc',
+      desc: 'A typical 3-tier web app: load balancer in public, app servers and database in private subnets.',
+      why: 'ALB needs 8+ IPs. App servers scale horizontally so 50+ gives room. RDS Multi-AZ needs 7+ IPs.',
+      subnets: [
+        { name: 'public-alb',    type: 'public',  ips: 16,  note: 'ALB / NLB (min 8 IPs)' },
+        { name: 'private-app',   type: 'private', ips: 50,  note: 'App servers (EC2 / ECS)' },
+        { name: 'private-db',    type: 'private', ips: 16,  note: 'RDS / Aurora (min 7 IPs)' },
+      ]
+    },
+    {
+      id: 'eks',
+      icon: '⚙️',
+      label: 'EKS Cluster',
+      color: '#7c3aed', colorLt: '#f5f3ff', colorBorder: '#ddd6fe',
+      desc: 'Kubernetes on AWS. Worker nodes need many IPs - each node consumes IPs for every pod via ENI.',
+      why: 'EKS recommends /24 per node group (250+ IPs). Each EC2 instance reserves IPs for all possible pods. Size generously or pods will fail to schedule.',
+      subnets: [
+        { name: 'public-alb',      type: 'public',  ips: 16,  note: 'ALB ingress controller' },
+        { name: 'private-nodes',   type: 'private', ips: 250, note: 'EKS worker nodes + pods (min 30 per node)' },
+        { name: 'private-db',      type: 'private', ips: 16,  note: 'RDS / data layer' },
+      ]
+    },
+    {
+      id: 'small',
+      icon: '🏠',
+      label: 'Small Internal Tool',
+      color: '#059669', colorLt: '#ecfdf5', colorBorder: '#6ee7b7',
+      desc: 'A small internal app for a team — lightweight, minimal traffic, no high availability needed.',
+      why: 'Small companies often only need a handful of IPs. A /28 gives 11 usable IPs which is plenty for a few EC2 instances and a small RDS.',
+      subnets: [
+        { name: 'public',   type: 'public',  ips: 11,  note: 'Small EC2 / bastion host' },
+        { name: 'private',  type: 'private', ips: 11,  note: 'App + DB (small scale)' },
+      ]
+    },
+    {
+      id: 'microservices',
+      icon: '🔧',
+      label: 'Microservices',
+      color: '#4f46e5', colorLt: '#eef2ff', colorBorder: '#c7d2fe',
+      desc: 'Multiple independent services, each in their own subnet for network isolation and security group control.',
+      why: 'Isolating services by subnet lets you apply fine-grained security group and NACL rules. Each service gets its own CIDR block.',
+      subnets: [
+        { name: 'public-alb',      type: 'public',  ips: 16,  note: 'ALB / API Gateway' },
+        { name: 'private-api',     type: 'private', ips: 50,  note: 'API / backend services' },
+        { name: 'private-workers', type: 'private', ips: 30,  note: 'Background workers / queues' },
+        { name: 'private-db',      type: 'private', ips: 16,  note: 'Databases (RDS / ElastiCache)' },
+      ]
+    },
+    {
+      id: 'datapipeline',
+      icon: '📊',
+      label: 'Data Pipeline',
+      color: '#d97706', colorLt: '#fffbeb', colorBorder: '#fcd34d',
+      desc: 'AWS Glue, EMR, or Redshift workloads. Data jobs spin up many temporary workers that all need IPs.',
+      why: 'EMR clusters can have 20-100+ nodes, each needing an IP. Glue jobs spin up workers dynamically. Always size data subnets generously - /22 or larger for big jobs.',
+      subnets: [
+        { name: 'private-glue-emr', type: 'private', ips: 500, note: 'Glue / EMR workers (scale up fast)' },
+        { name: 'private-redshift', type: 'private', ips: 30,  note: 'Redshift cluster nodes' },
+        { name: 'public-bastion',   type: 'public',  ips: 11,  note: 'Bastion / jump host' },
+      ]
+    },
+    {
+      id: 'learning',
+      icon: '📚',
+      label: 'Just Learning CIDR',
+      color: '#ec4899', colorLt: '#fdf2f8', colorBorder: '#f9a8d4',
+      desc: 'Exploring how CIDR blocks, subnets, and IP allocation work. No real workload - just experimenting.',
+      why: 'Start with simple numbers to understand the math. Try changing IPs needed and watch how the prefix changes. Experiment freely!',
+      subnets: [
+        { name: 'public',  type: 'public',  ips: 50,  note: 'Experiment freely' },
+        { name: 'private', type: 'private', ips: 100, note: 'Change me and see what happens' },
+      ]
+    },
+    {
+      id: 'custom',
+      icon: '✏️',
+      label: 'Custom / Scratch',
+      color: '#64748b', colorLt: '#f8fafc', colorBorder: '#e2e8f0',
+      desc: 'Start with a blank slate and define exactly what you need.',
+      why: 'You know your requirements best. Head to Step 1 and add your own subnet names, types, and IP counts. Everything is calculated for you as you go.',
+      subnets: null
+    },
+  ];
+
+  let selectedUseCase = null;
+
+  function renderUseCaseGrid() {
+    const grid = document.getElementById('useCaseGrid');
+    grid.innerHTML = USE_CASES.map(uc => `
+      <div id="uc-${uc.id}" onclick="selectUseCase('${uc.id}')"
+        style="padding:12px 14px;border-radius:12px;border:2px solid ${uc.colorBorder};
+               background:${uc.colorLt};cursor:pointer;transition:all 0.18s;
+               display:flex;flex-direction:column;gap:4px;"
+        onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 16px rgba(0,0,0,0.1)'"
+        onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="font-size:1.3rem;">${uc.icon}</div>
+        <div style="font-size:0.82rem;font-weight:700;color:${uc.color};">${uc.label}</div>
+        <div style="font-size:0.72rem;color:#334155;line-height:1.4;">${uc.desc}</div>
+      </div>`).join('');
+  }
+
+  function selectUseCase(id) {
+    selectedUseCase = id;
+    const uc = USE_CASES.find(u => u.id === id);
+    if (!uc) return;
+
+    // Highlight selected card
+    document.querySelectorAll('[id^="uc-"]').forEach(el => {
+      el.style.opacity = '0.5';
+      el.style.transform = '';
+    });
+    const sel = document.getElementById(`uc-${id}`);
+    sel.style.opacity = '1';
+    sel.style.border = `2px solid ${uc.color}`;
+    sel.style.boxShadow = `0 0 0 3px ${uc.colorBorder}`;
+
+    // Show info panel
+    const info = document.getElementById('useCaseInfo');
+    info.style.display = 'block';
+    info.style.background = uc.colorLt;
+    info.style.border = `1.5px solid ${uc.colorBorder}`;
+    info.style.color = '#1e1b4b';
+
+    const subnetPreview = uc.subnets
+      ? uc.subnets.map(s =>
+          `<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.7);
+           border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:2px 9px;font-size:0.75rem;font-weight:600;margin:2px;">
+           <span style="width:7px;height:7px;border-radius:50%;background:${s.type==='public'?'#4f46e5':'#059669'};display:inline-block;"></span>
+           ${s.name} <span style="opacity:0.6;font-weight:400;">(${s.ips} IPs)</span>
+           </span>`).join(' ')
+      : '';
+
+    info.innerHTML = `
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${uc.color};margin-bottom:6px;">
+            ${uc.icon} ${uc.label}
+          </div>
+          ${uc.why ? `<div style="font-size:0.8rem;color:#334155;margin-bottom:8px;">${uc.why}</div>` : ''}
+          ${subnetPreview ? `<div style="margin-top:6px;">${subnetPreview}</div>` : ''}
+        </div>
+        ${uc.subnets ? `
+        <button onclick="applyUseCase('${id}')"
+          style="background:${uc.color};color:#fff;border:none;border-radius:9px;
+                 padding:9px 18px;font-family:inherit;font-size:0.84rem;font-weight:700;
+                 cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.15);
+                 transition:all 0.2s;flex-shrink:0;"
+          onmouseover="this.style.transform='translateY(-1px)'"
+          onmouseout="this.style.transform=''">
+          Apply to Step 1 →
+        </button>` : `
+        <button onclick="resetUseCaseSelection()"
+          style="background:#64748b;color:#fff;border:none;border-radius:9px;
+                 padding:9px 18px;font-family:inherit;font-size:0.84rem;font-weight:700;
+                 cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+          Start from scratch
+        </button>`}
+      </div>`;
+  }
+
+  function resetUseCaseSelection() {
+    document.getElementById('useCaseInfo').style.display = 'none';
+    document.querySelectorAll('[id^="uc-"]').forEach(el => {
+      el.style.opacity = '1';
+      el.style.boxShadow = '';
+    });
+  }
+
+  function applyUseCase(id) {
+    const uc = USE_CASES.find(u => u.id === id);
+    if (!uc || !uc.subnets) return;
+
+    // Reset defs with use case subnets
+    nextId = 1;
+    defs = uc.subnets.map(s => ({ id: nextId++, name: s.name, type: s.type, ips: s.ips }));
+    azToggles = {};
+    renderDefList();
+    renderAZs();
+    updateVpcHint();
+    clearResults();
+
+    // Smooth scroll to Step 1
+    const step1 = document.getElementById('step1');
+    if (step1) window.scrollTo({ top: step1.getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
+
+    // Show applied confirmation in info panel
+    const info = document.getElementById('useCaseInfo');
+    info.style.background = '#d1fae5';
+    info.style.border = '1.5px solid #6ee7b7';
+    info.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div style="font-size:0.84rem;font-weight:700;color:#065f46;">
+          ✓ Applied! Step 1 is pre-filled with ${uc.subnets.length} subnets for ${uc.label}.
+          You can edit any values before calculating.
+        </div>
+        <button onclick="resetUseCaseSelection()"
+          style="background:#64748b;color:#fff;border:none;border-radius:9px;
+                 padding:9px 18px;font-family:inherit;font-size:0.84rem;font-weight:700;
+                 cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+          Start from scratch
+        </button>
+      </div>`;
+  }
+
+  // ── State ──
+  let defs = [
+    { id: 1, name: 'public',  type: 'public',  ips: 0 },
+    { id: 2, name: 'private', type: 'private', ips: 0 }
+  ];
+  let nextId = 3;
+  let azToggles = {};
+  let hasCalculated = false;
+  let hasStep2Touched = false;
+
+  // AZ colors for bar
+
+  function azLabel(i) {
+    return `AZ-${i}`;
+  }
+
+  // ── VPC Hint (live minimum size) ──
+  function updateVpcHint() {
+    const hint = document.getElementById('vpcHint');
+    const vpc = parseVpc(document.getElementById('vpcCidr').value);
+    if (!vpc) { hint.className = 'vpc-hint'; return; }
+
+    const numAZ = parseInt(document.getElementById('numAZ').value, 10);
+
+    // Check if any AZ assignments have been made
+    const anyToggled = Object.values(azToggles).some(s => s.size > 0);
+    const isWorstCase = !anyToggled;
+
+    let totalNeeded = 0;
+    if (anyToggled) {
+      // Simulate same global-cursor allocation as calculate() — carries across AZs
+      // so cross-AZ alignment gaps are included, keeping hint consistent with real results
+      let simCursor = vpc.ipInt;
+      for (let az = 1; az <= numAZ; az++) {
+        const active = azToggles[az] || new Set();
+        const azDefs = defs
+          .filter(d => active.has(d.id) && d.ips > 0)
+          .map(d => ({ ...d, ...smallestAwsSubnet(d.ips) }))
+          .filter(d => d.blockSize > 0)
+          .sort((a, b) => b.blockSize - a.blockSize);
+        for (const d of azDefs) {
+          simCursor = alignUp(simCursor, d.blockSize) + d.blockSize;
+        }
+      }
+      totalNeeded = simCursor - vpc.ipInt;
+    } else {
+      // Worst-case: all subnets in all AZs (no assignments yet)
+      const activeDefs = defs.filter(d => d.ips > 0);
+      let perAZ = 0;
+      activeDefs.forEach(d => { perAZ += smallestAwsSubnet(d.ips).blockSize; });
+      totalNeeded = perAZ * numAZ;
+    }
+
+    if (totalNeeded <= 0 || defs.every(d => !d.ips || d.ips === 0)) { hint.className = 'vpc-hint'; return; }
+
+    const minPrefixRaw = 32 - Math.ceil(Math.log2(totalNeeded));
+    const minPrefix = Math.min(28, Math.max(16, minPrefixRaw));  // AWS VPC: /16–/28
+    const minIPs = Math.pow(2, 32 - minPrefix);
+    const nextPrefix = Math.min(28, Math.max(16, minPrefix - 1));
+    const nextIPs = Math.pow(2, 32 - nextPrefix);
+    const usagePct = totalNeeded / vpc.totalIPs;
+    const estNote = isWorstCase
+      ? `<br><span style="display:block;margin-top:4px;font-size:0.75rem;color:#334155;font-style:italic;">Worst-case estimate — assumes all subnets in all AZs. In Step 3 you can assign selectively to reduce usage.</span>`
+      : ``;
+
+    if (totalNeeded > 65536) {
+      // Exceeds AWS max
+      hint.className = 'vpc-hint bad';
+      hint.innerHTML = `✗ Your subnets across <strong>${numAZ} AZ${numAZ>1?'s':''}</strong> need ~<strong>${totalNeeded.toLocaleString()} IPs</strong> — exceeds the AWS maximum VPC size of <strong>/16 (65,536 IPs)</strong>.<br><span style="display:block;margin-top:4px;">Reduce subnet sizes or split your workload across multiple VPCs.</span>`;
+    } else if (totalNeeded > vpc.totalIPs) {
+      // Doesn't fit — over budget
+      hint.className = 'vpc-hint warn';
+      const whoLabel = isWorstCase
+        ? `Worst-case (all subnets × ${numAZ} AZ${numAZ>1?'s':''})`
+        : `Your Step 3 assignments across ${numAZ} AZ${numAZ>1?'s':''}`;
+      hint.innerHTML = `⚠ <strong>${whoLabel}</strong> need <strong>${totalNeeded.toLocaleString()} IPs</strong> but VPC <strong>/${vpc.prefix}</strong> only has <strong>${vpc.totalIPs.toLocaleString()} IPs</strong>.<br><span style="display:block;margin-top:4px;">Minimum VPC needed: <strong>/${minPrefix}</strong> (${minIPs.toLocaleString()} IPs).</span>` + estNote;
+    } else if (totalNeeded === vpc.totalIPs) {
+      // Exact fit — zero headroom
+      hint.className = 'vpc-hint warn';
+      hint.innerHTML = `⚠ Exact fit — ${numAZ} AZ${numAZ>1?'s':''} use <strong>100%</strong> of VPC (${totalNeeded.toLocaleString()} IPs). No room for growth or alignment gaps.<br><span style="display:block;margin-top:4px;">Consider <strong>/${nextPrefix}</strong> (${nextIPs.toLocaleString()} IPs) for headroom.</span>` + estNote;
+    } else if (usagePct >= 0.9) {
+      // 90–99% — very tight
+      hint.className = 'vpc-hint warn';
+      hint.innerHTML = `⚠ Very tight — ${numAZ} AZ${numAZ>1?'s':''} use <strong>${Math.round(usagePct*100)}%</strong> of VPC (${totalNeeded.toLocaleString()} of ${vpc.totalIPs.toLocaleString()} IPs). Almost no room for growth.<br><span style="display:block;margin-top:4px;">Consider <strong>/${nextPrefix}</strong> (${nextIPs.toLocaleString()} IPs) for more headroom.</span>` + estNote;
+    } else if (usagePct >= 0.75) {
+      // 75–89% — tight but workable
+      hint.className = 'vpc-hint warn';
+      hint.innerHTML = `⚠ Tight — ${numAZ} AZ${numAZ>1?'s':''} use <strong>${Math.round(usagePct*100)}%</strong> of VPC (${totalNeeded.toLocaleString()} of ${vpc.totalIPs.toLocaleString()} IPs). Limited room to grow.<br><span style="display:block;margin-top:4px;">Tightest valid VPC: <strong>/${minPrefix}</strong> (${minIPs.toLocaleString()} IPs).</span>` + estNote;
+    } else if (usagePct >= 0.5) {
+      // 50–74% — reasonable headroom
+      hint.className = 'vpc-hint ok';
+      hint.innerHTML = `✓ Fits comfortably — ${numAZ} AZ${numAZ>1?'s':''} use <strong>${Math.round(usagePct*100)}%</strong> of VPC (${totalNeeded.toLocaleString()} of ${vpc.totalIPs.toLocaleString()} IPs). Some room to grow.<br><span style="display:block;margin-top:4px;">Tightest valid VPC: <strong>/${minPrefix}</strong> (${minIPs.toLocaleString()} IPs).</span>` + estNote;
+    } else {
+      // Under 50% — plenty of room
+      hint.className = 'vpc-hint ok';
+      hint.innerHTML = `✓ Fits well — ${numAZ} AZ${numAZ>1?'s':''} use <strong>${Math.round(usagePct*100)}%</strong> of VPC (${totalNeeded.toLocaleString()} of ${vpc.totalIPs.toLocaleString()} IPs). Plenty of headroom.<br><span style="display:block;margin-top:4px;">Tightest valid VPC: <strong>/${minPrefix}</strong> (${minIPs.toLocaleString()} IPs).</span>` + estNote;
+    }
+    // Show nudge row above prefix dropdown if VPC is larger than needed
+    const nudgeRow = document.getElementById('prefixNudgeRow');
+    const nudgeText = document.getElementById('prefixNudgeText');
+    if (nudgeRow && nudgeText) {
+      if (vpc.prefix < minPrefix && totalNeeded > 0) {
+        nudgeText.textContent = `Try /${minPrefix} instead`;
+        nudgeRow.style.visibility = 'visible';
+      } else {
+        nudgeRow.style.visibility = 'hidden';
+      }
+    }
+  }
+
+  // ── Render: def list ──
+  function renderDefList() {
+    document.getElementById('subnetDefs').innerHTML = defs.map(d => {
+      const r = smallestAwsSubnet(d.ips);
+      return `
+        <div class="subnet-def">
+          <input type="text" value="${esc(d.name)}" placeholder="e.g. web-public"
+            oninput="updateDef(${d.id},'name',this.value)" />
+          <div class="subnet-def-inner-row">
+            <select onchange="updateDef(${d.id},'type',this.value)">
+              <option value="public"  ${d.type==='public' ?'selected':''}>public</option>
+              <option value="private" ${d.type==='private'?'selected':''}>private</option>
+            </select>
+            <input type="number" value="${d.ips > 0 ? d.ips : ''}" min="0" placeholder="Enter required IPs"
+              oninput="const v=parseInt(this.value,10); updateDef(${d.id},'ips',isNaN(v)?0:v)" />
+            <button class="remove-btn" onclick="removeDef(${d.id})">×</button>
+          </div>
+        </div>`;
+    }).join('');
+    renderDefSummary();
+  }
+
+  // ── Render: def summary ──
+  function renderDefSummary() {
+    const el = document.getElementById('defSummary');
+    if (!el || defs.length === 0) return;
+    const rows = defs.map(d => {
+      const name = d.name?.trim() || 'unnamed';
+      const color = d.type === 'public' ? '#1d4ed8' : '#15803d';
+      if (!d.ips || d.ips <= 0) {
+        return `<span style="color:#1a1a2e;font-weight:bold">${esc(name)}</span>: <span style="color:#334155;font-style:italic;">set IPs to enable sizing</span>`;
+      }
+      const r = smallestAwsSubnet(d.ips);
+      if (r.impossible) return `<span style="color:#1a1a2e;font-weight:bold">${esc(name)}</span>: <span style="color:#dc2626;font-weight:700;">✕ ${d.ips.toLocaleString()} IPs exceeds AWS max (65,531 per subnet)</span>`;
+      return `<span style="color:#1a1a2e;font-weight:bold">${esc(name)}</span>: ${d.ips} usable → <span style="color:${color};font-weight:bold">/${r.prefix}</span> <span style="color:#334155">(${r.blockSize} total, ${r.usable} usable)</span>`;
+    });
+    const totalBlock = defs.filter(d => d.ips > 0).reduce((sum, d) => sum + smallestAwsSubnet(d.ips).blockSize, 0);
+    // Build columnar table
+    const hasAnyIps = defs.some(d => d.ips > 0);
+    const TH = 'padding:6px 10px;text-align:left;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;color:#334155;font-weight:700;';
+    const tableRows = defs.map(d => {
+      const typeColor  = d.type === 'public' ? '#1d4ed8' : '#15803d';
+      const typeBg     = d.type === 'public' ? '#eff6ff'  : '#f0fdf4';
+      const typeBorder = d.type === 'public' ? '#bfdbfe'  : '#bbf7d0';
+      const r = d.ips > 0 ? smallestAwsSubnet(d.ips) : null;
+      const reqCell      = d.ips > 0
+        ? `<strong>${d.ips.toLocaleString()}</strong>`
+        : `<span style="color:#334155;font-style:italic;">not set</span>`;
+      const usableCell   = !r ? `<span style="color:#334155;">—</span>`
+        : r.impossible ? `<span style="color:#dc2626;font-weight:700;">✕ Too large</span>`
+        : `<strong style="color:${typeColor}">${r.usable.toLocaleString()}</strong>`;
+      const blockCapCell = !r ? `<span style="color:#334155;font-style:italic;">—</span>`
+        : r.impossible ? `<span style="color:#dc2626;font-size:0.8rem;">Max is 65,531 / subnet</span>`
+        : `<div class="block-cell"><strong style="color:${typeColor}">/${r.prefix}</strong><span>${r.blockSize.toLocaleString()} total IPs</span></div>`;
+      return `<tr style="border-bottom:1px solid #f1f5f9;">
+        <td data-label="Name" style="padding:8px 10px;font-weight:700;color:#1a1a2e;">${esc(d.name?.trim()||'unnamed')}</td>
+        <td data-label="Type" style="padding:8px 10px;"><span class="type-badge" style="background:${typeBg};color:${typeColor};border:1px solid ${typeBorder};border-radius:4px;padding:2px 8px;font-size:0.78rem;font-weight:700;">${esc(d.type)}</span></td>
+        <td data-label="Required IPs" style="padding:8px 10px;color:#334155;">${reqCell}</td>
+        <td data-label="Block / Total IPs" style="padding:8px 10px;">${blockCapCell}</td>
+        <td data-label="Usable IPs" style="padding:8px 10px;">${usableCell}</td>
+      </tr>`;
+    });
+
+    el.style.display = 'block';
+    el.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:0.84rem;">
+        <thead>
+          <tr style="border-bottom:2px solid #e2e8f0;">
+            <th style="${TH}">Name</th>
+            <th style="${TH}">Type</th>
+            <th style="${TH}">Required IPs</th>
+            <th style="${TH}">Block · Total IPs</th>
+            <th style="${TH}">Usable IPs</th>
+          </tr>
+        </thead>
+        <tbody>${tableRows.join('')}</tbody>
+      </table>` +
+      (totalBlock > 0 ? `<div style="margin-top:10px;padding:8px 10px;border-top:2px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+        <span style="color:#334155;font-size:0.82rem;">Per-AZ total (one copy of each subnet)</span>
+        <strong style="color:#1a1a2e;font-size:0.9rem;">${totalBlock.toLocaleString()} IPs</strong>
+      </div>` : '');
+  }
+
+  // ── Render: AZ toggles ──
+  function initToggles() {
+    const numAZ = parseInt(document.getElementById('numAZ').value, 10);
+    for (let i = 1; i <= numAZ; i++) {
+      if (!azToggles[i]) {
+        // Default all subnets ON — user turns off what they don't need
+        azToggles[i] = new Set(defs.map(d => d.id));
+      } else {
+        // Add any newly defined subnets to existing AZs
+        defs.forEach(d => azToggles[i].add(d.id));
+      }
+    }
+    Object.keys(azToggles).forEach(k => {
+      if (parseInt(k, 10) > numAZ) delete azToggles[k];
+    });
+  }
+
+  function renderAZs() {
+    initToggles();
+    const numAZ = parseInt(document.getElementById('numAZ').value, 10);
+    const container = document.getElementById('azToggles');
+    container.innerHTML = '';
+    for (let i = 1; i <= numAZ; i++) {
+      const row = document.createElement('div');
+      row.className = `az-row az-${i}`;
+      row.innerHTML = `
+        <div class="az-title">
+          <span>${esc(azLabel(i))}</span>
+          <small>toggle subnets to include</small>
+        </div>
+        <div class="az-toggles" id="toggles-${i}"></div>`;
+      container.appendChild(row);
+      renderChips(i);
+    }
+  }
+
+  function renderChips(azIdx) {
+    const container = document.getElementById(`toggles-${azIdx}`);
+    if (!container) return;
+    if (defs.length === 0) {
+      container.innerHTML = '<span class="no-subnets">No subnets defined yet.</span>';
+      return;
+    }
+    container.innerHTML = defs.map(d => {
+      const active = azToggles[azIdx]?.has(d.id);
+      const cls = active ? `active-az-${azIdx}` : '';
+      const sizeLabel = (d.ips > 0)
+        ? (() => { const calc = smallestAwsSubnet(d.ips); return calc.impossible ? 'Too large for one AWS subnet' : `${d.ips} usable → /${calc.prefix}`; })()
+        : 'IPs not set';
+      return `
+        <div class="toggle-chip ${cls}" onclick="toggleChip(${azIdx},${d.id})">
+          <span class="dot"></span>
+          ${esc(d.name?.trim() || 'unnamed')}
+          <span style="opacity:0.6;font-size:0.72rem">(${esc(sizeLabel)})</span>
+        </div>`;
+    }).join('');
+  }
+
+  function toggleChip(azIdx, defId) {
+    if (!azToggles[azIdx]) azToggles[azIdx] = new Set();
+    if (azToggles[azIdx].has(defId)) azToggles[azIdx].delete(defId);
+    else azToggles[azIdx].add(defId);
+    renderChips(azIdx);
+    updateVpcHint();
+    clearResults();
+  }
+
+  // ── CRUD ──
+  function addSubnetDef() {
+    const d = { id: nextId++, name: '', type: 'public', ips: 0 };
+    defs.push(d);
+    // new subnets default ON in all existing AZs
+    Object.keys(azToggles).forEach(k => azToggles[k].add(d.id));
+    renderDefList(); renderAZs(); updateVpcHint(); clearResults(); updateProgress();
+  }
+
+  function removeDef(id) {
+    if (defs.length <= 1) return;
+    defs = defs.filter(d => d.id !== id);
+    Object.keys(azToggles).forEach(k => azToggles[k].delete(id));
+    renderDefList(); renderAZs(); updateVpcHint(); clearResults(); updateProgress();
+  }
+
+  function updateDef(id, field, val) {
+    const d = defs.find(x => x.id === id);
+    if (!d) return;
+    if (field === 'ips') {
+      val = Math.max(0, parseInt(val, 10) || 0);
+    }
+    if (field === 'name') {
+      val = String(val || '').trimStart();
+    }
+    d[field] = val;
+    renderDefSummary();
+    renderAZs();
+    updateVpcHint();
+    clearResults();
+    updateProgress();
+  }
+
+  // ── Quick calc ──
+  function setQuick(n) {
+    document.getElementById('quickUsable').value = n;
+    updateQuickCalc();
+  }
+
+
+  function toggleQuickRef(btn) {
+    const body = document.getElementById('quickRefBody');
+    const open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : 'block';
+    btn.textContent = open ? '▼ Show' : '▲ Hide';
+  }
+
+
+  function toggleAzExplainer(btn) {
+    const body    = document.getElementById('azExplainerBody');
+    const chevron = document.getElementById('azExplainerChevron');
+    const open    = body.style.display === 'none';
+    body.style.display    = open ? 'block' : 'none';
+    chevron.textContent   = open ? '▲ hide' : '▼ show';
+  }
+  function showPrefixInfo(event, prefix) {
+    const total  = Math.pow(2, 32 - prefix);
+    const usable = total - 5;
+    // Highlight selected pill
+    document.querySelectorAll('#prefixPillGroup .pill').forEach(p => p.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    // Populate styled box
+    document.getElementById('prefixInfo').style.display = 'block';
+    document.getElementById('piPrefix').textContent  = `/${prefix}`;
+    document.getElementById('piTotal').textContent   = total.toLocaleString();
+    document.getElementById('piUsable').textContent  = usable.toLocaleString();
+    document.getElementById('piFormula').textContent = `2^(32−${prefix}) − 5 = ${usable.toLocaleString()}`;
+  }
+
+  function updateQuickCalc() {
+    const u = parseInt(document.getElementById('quickUsable').value, 10) || 0;
+    const r = smallestAwsSubnet(u);
+    if (r.impossible) {
+      document.getElementById('quickPrefix').textContent    = 'Exceeds AWS max';
+      document.getElementById('quickTotal').textContent     = '—';
+      document.getElementById('quickUsableOut').textContent = '—';
+    } else {
+      document.getElementById('quickPrefix').textContent    = r.prefix !== null ? `/${r.prefix}` : '—';
+      document.getElementById('quickTotal').textContent     = r.blockSize > 0 ? r.blockSize : '—';
+      document.getElementById('quickUsableOut').textContent = r.blockSize > 0 ? r.usable : '—';
+    }
+  }
+
+  // ── UI helpers ──
+  function showError(msg) {
+    const box = document.getElementById('errorBox');
+    box.innerHTML = '⚠ ' + msg;
+    box.className = 'error-box show';
+  }
+  function clearError() {
+    const box = document.getElementById('errorBox');
+    box.className = 'error-box'; box.innerHTML = '';
+  }
+  function clearResults() {
+    hasCalculated = false;
+    // hasStep2Touched intentionally NOT reset here — user already interacted with Step 2
+    // Remove quiz overlays but preserve quizMode toggle state for next calculate
+    document.getElementById('azResults').querySelectorAll('.quiz-overlay').forEach(o => o.remove());
+    document.getElementById('results').className = 'results';
+    document.getElementById('explainer').style.display = 'none'; document.getElementById('explainerWhy').style.display = 'none';
+    clearError();
+    const diag = document.getElementById('archDiagram');
+    if (diag) { diag.className = 'arch-diagram'; document.getElementById('archDiagramInner').innerHTML = ''; }
+    updateProgress();
+  }
+
+  // ── IP Bar ──
+  function renderIpBar(vpc, azOutput, vpcEnd) {
+    const bar = document.getElementById('ipBar');
+    const legend = document.getElementById('ipBarLegend');
+    const total = vpc.totalIPs;
+    const segments = [];
+
+    let allRows = [];
+    azOutput.forEach(({ az, rows }) => {
+      rows.forEach(r => { if (r.cidr) allRows.push({ ...r, az }); });
+    });
+
+    // sort by start IP
+    allRows.sort((a, b) => a.start - b.start);
+
+    let cursor = vpc.ipInt;
+    allRows.forEach(r => {
+      if (r.start > cursor) {
+        segments.push({ type: 'gap', size: r.start - cursor });
+      }
+      segments.push({ type: 'subnet', size: r.blockSize, row: r });
+      cursor = r.end;
+    });
+    if (cursor < vpcEnd) {
+      segments.push({ type: 'gap', size: vpcEnd - cursor });
+    }
+
+    const colors = ['#3b82f6','#8b5cf6','#10b981','#f97316','#ec4899','#14b8a6','#f59e0b','#6366f1'];
+    let colorIdx = 0;
+    const subnetColors = {};
+
+    bar.innerHTML = segments.map(seg => {
+      const pct = (seg.size / total * 100).toFixed(2);
+      if (seg.type === 'gap') {
+        return `<div class="ip-bar-seg" style="flex:${seg.size};background:#f1f5f9;color:#cbd5e1;">
+          <div class="seg-tip">Unused - ${seg.size} IPs available</div>
+        </div>`;
+      }
+      const r = seg.row;
+      const key = `az${r.az}-${r.def.name}`;
+      if (!subnetColors[key]) subnetColors[key] = colors[colorIdx++ % colors.length];
+      const col = subnetColors[key];
+      const label = pct > 5 ? `<span style="font-size:0.7rem;font-weight:bold;text-shadow:0 1px 2px rgba(0,0,0,0.3)">${esc(r.def.name)}</span>` : '';
+      const segStart = intToIp(r.start);
+      const segEnd = intToIp(r.end - 1);
+      return `<div class="ip-bar-seg" style="flex:${seg.size};background:${col};color:#fff;">
+        <div class="seg-tip">
+          <strong>${esc(r.def.name)}</strong> - AZ-${r.az}<br>
+          CIDR: <strong>${r.cidr}</strong><br>
+          Range: ${segStart} – ${segEnd}<br>
+          Total: ${r.blockSize} IPs &nbsp;|&nbsp; Usable: ${r.usable}
+        </div>
+        ${label}
+      </div>`;
+    }).join('');
+
+    legend.innerHTML = allRows.map(r => {
+      const key = `az${r.az}-${r.def.name}`;
+      const col = subnetColors[key] || '#334155';
+      return `<div class="legend-item"><div class="legend-dot" style="background:${col}"></div>AZ-${r.az} ${esc(r.def.name)} (${r.cidr})</div>`;
+    }).join('');
+
+    // spare
+    const usedIPs = allRows.reduce((s, r) => s + r.blockSize, 0);
+    const spare = total - usedIPs;
+    if (spare > 0) {
+      legend.innerHTML += `<div class="legend-item"><div class="legend-dot" style="background:#f1f5f9;border:1px solid #e2e8f0"></div>Unused (${spare} IPs)</div>`;
+    }
+  }
+
+  // ── Calculate ──
+  function calculate() {
+    clearError();
+    const resultsDiv = document.getElementById('results');
+    resultsDiv.className = 'results';
+
+    const vpc = parseVpc(document.getElementById('vpcCidr').value);
+    if (!vpc) { showError('Invalid VPC CIDR. The IP must be a network address with host bits set to zero (e.g. <strong>10.0.0.0/16</strong>, not 10.0.1.0/16). Prefix must be /16–/28.'); return; }
+
+    // Validate subnet names
+    const names = defs.map(d => (d.name || '').trim());
+    const blanks = names.filter(n => n === '');
+    const dupes  = names.filter((n, i) => n !== '' && names.indexOf(n) !== i);
+    if (blanks.length) { showError('Please give all subnets a name before calculating.'); return; }
+    if (dupes.length)  { showError(`Duplicate subnet name: "<strong>${esc(dupes[0])}</strong>" - each subnet must have a unique name.`); return; }
+
+    const numAZ = parseInt(document.getElementById('numAZ').value, 10);
+    // Guard against 32-bit overflow — reject CIDRs that extend past end of IPv4 space
+    if (vpc.ipInt + vpc.totalIPs >= 0x100000000) {
+      showError('VPC CIDR extends beyond the end of IPv4 address space. Choose a lower starting IP or smaller prefix.');
+      return;
+    }
+    const vpcEnd = (vpc.ipInt + vpc.totalIPs) >>> 0;
+
+    // Check at least one subnet is toggled somewhere
+    const anyActive = Object.values(azToggles).some(s => s.size > 0);
+    if (!anyActive) {
+      showError('No subnets assigned to any AZ - go to Step 3 and click the chips to assign subnets to each Availability Zone.');
+      return;
+    }
+
+    // Upfront size check — simulate actual allocation including alignment gaps
+    let simCursor = vpc.ipInt;
+    for (let az = 1; az <= numAZ; az++) {
+      const active = azToggles[az] || new Set();
+      const azDefs = defs
+        .filter(d => active.has(d.id))
+        .map(d => ({ ...d, ...smallestAwsSubnet(d.ips) }))
+        .filter(d => d.blockSize > 0)
+        .sort((a, b) => b.blockSize - a.blockSize);
+      for (const d of azDefs) {
+        simCursor = alignUp(simCursor, d.blockSize) + d.blockSize;
+      }
+    }
+    const totalNeeded = simCursor - vpc.ipInt;
+    if (simCursor > vpcEnd) {
+        const minPrefixRaw = 32 - Math.ceil(Math.log2(totalNeeded));
+      const minPrefix = Math.min(28, Math.max(16, minPrefixRaw));  // AWS VPC: /16–/28
+      const exceedsAwsMax = totalNeeded > 65536;
+      // Calculate what 1 AZ would need, as a helpful alternative suggestion
+      const perAZNeeded = totalNeeded / numAZ;
+      const oneAZPrefix = Math.min(28, Math.max(16, 32 - Math.ceil(Math.log2(perAZNeeded))));
+      const azHint = numAZ > 1
+        ? `<div style="margin-top:10px;padding:8px 12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;font-size:0.8rem;color:#92400e;">
+            💡 <strong>Fewer AZs = smaller VPC:</strong> with ${numAZ} AZs every subnet is duplicated ${numAZ}×.
+            If you reduced to <strong>1 AZ</strong> you'd only need ~<strong>${Math.ceil(perAZNeeded).toLocaleString()} IPs</strong> - fitting in a <strong>/${oneAZPrefix}</strong>.
+            Use 1 AZ for dev/test, 2+ AZs for production (required by load balancers and RDS).
+          </div>`
+        : '';
+      showError(exceedsAwsMax
+        ? `Your subnets across <strong>${numAZ} AZ${numAZ>1?'s':''}</strong> require ~<strong>${totalNeeded.toLocaleString()} IPs</strong> total — this exceeds the AWS maximum VPC size of <strong>/16 (65,536 IPs)</strong>.<br>Reduce your subnet IP counts or split your workload across multiple VPCs.` + azHint
+        : `VPC too small: based on your Step 3 assignments, your subnets across <strong>${numAZ} AZ${numAZ>1?'s':''}</strong> require <strong>${totalNeeded.toLocaleString()} IPs</strong> total, ` +
+          `but your VPC only has <strong>${vpc.totalIPs.toLocaleString()} IPs (/${vpc.prefix})</strong>.<br>` +
+          `Minimum VPC size needed: <strong>/${minPrefix}</strong> (${Math.pow(2, 32 - minPrefix).toLocaleString()} IPs).` + azHint
+      );
+      return;
+    }
+
+    let cursor = vpc.ipInt;
+    const warnings = [];
+    const azOutput = [];
+    // Track across ALL AZs so private in AZ-2 knows public in AZ-1 came before it
+    let prevEnd = -1;
+    let prevStart = -1;
+    let prevCidr = '';
+
+    // Reject impossible subnets before calculating
+    const impossibleDefs = defs.filter(d => d.ips > 0 && smallestAwsSubnet(d.ips).impossible);
+    if (impossibleDefs.length > 0) {
+      const names = impossibleDefs.map(d => `"${d.name || 'unnamed'}" (${d.ips.toLocaleString()} IPs requested)`).join(', ');
+      showError(`Cannot calculate because these subnet requests exceed the AWS single-subnet limit:<br><strong>${esc(names)}</strong><br><br>AWS allows a maximum of 65,531 usable IPs in one subnet. Split large requirements across multiple subnets.`);
+      return;
+    }
+
+    for (let az = 1; az <= numAZ; az++) {
+      const active = azToggles[az] || new Set();
+      const activeDefs = defs
+        .filter(d => active.has(d.id))
+        .map(d => ({ ...d, ...smallestAwsSubnet(d.ips) }))
+        .filter(d => d.blockSize > 0 && !d.impossible)   // skip "not set" and impossible subnets
+        .sort((a, b) => b.blockSize - a.blockSize);
+
+      const rows = [];
+      for (const def of activeDefs) {
+        const start = alignUp(cursor, def.blockSize);
+        const end = start + def.blockSize;
+        if (end > vpcEnd) {
+          warnings.push(`${esc(azLabel(az))} → "${esc(def.name || 'unnamed')}": not enough space (needs ${def.blockSize} IPs, /${def.prefix}).`);
+          rows.push({ def, cidr: null, blockSize: def.blockSize, usable: def.usable, prefix: def.prefix, start: null, end: null, _prevEnd: prevEnd, _prevCidr: prevCidr, _prevStart: prevStart });
+        } else {
+          const cidr = `${intToIp(start)}/${def.prefix}`;
+          rows.push({ def, cidr, blockSize: def.blockSize, usable: def.usable, prefix: def.prefix, start, end, _prevEnd: prevEnd, _prevCidr: prevCidr, _prevStart: prevStart });
+          prevStart = start;
+          prevEnd = end;
+          prevCidr = cidr;
+          cursor = end;
+        }
+      }
+      azOutput.push({ az, rows });
+    }
+
+    // Compute accurate IP accounting — cursor includes alignment gaps, so use subnet sums instead
+    const allRows = azOutput.flatMap(a => a.rows).filter(r => r.cidr);
+    const allocatedIPs   = allRows.reduce((s, r) => s + r.blockSize, 0);
+    const maxEnd         = allRows.reduce((m, r) => Math.max(m, r.end), vpc.ipInt);
+    const gapIPs         = (maxEnd - vpc.ipInt) - allocatedIPs;
+    const remainingContig = vpcEnd - maxEnd;           // contiguous free space at the end
+    const remainingTotal  = vpc.totalIPs - allocatedIPs; // total free (including gaps)
+    const vpcRange = `${intToIp(vpc.ipInt)} – ${intToIp(vpcEnd - 1)}`;
+    const remRange = remainingContig > 0 ? `${intToIp(maxEnd)} – ${intToIp(vpcEnd - 1)}` : '—';
+
+    // Free space = remaining minus gaps (truly usable contiguous space at end)
+    const trulyFree = remainingTotal - gapIPs;
+    const summaryParts = [
+      `Total: <strong>${vpc.totalIPs.toLocaleString()} IPs</strong>`,
+      `Allocated: <strong>${allocatedIPs.toLocaleString()} IPs</strong>`,
+    ];
+    if (gapIPs > 0) summaryParts.push(
+      `<span style="color:#b45309;" title="Address space lost to subnet alignment requirements">` +
+      `Alignment gaps: <strong>${gapIPs.toLocaleString()} IPs</strong> ⚠</span>`
+    );
+    if (trulyFree > 0) summaryParts.push(
+      `<span style="color:#16a34a;">Free: <strong>${trulyFree.toLocaleString()} IPs</strong>` +
+      (remainingContig > 0 ? ` <span style="opacity:0.7;font-size:0.8em">(${esc(remRange)})</span>` : '') +
+      `</span>`
+    );
+    if (trulyFree <= 0 && gapIPs > 0) summaryParts.push(
+      `<span style="color:#dc2626;">Free: <strong>0 IPs</strong> — all remaining space is alignment gaps</span>`
+    );
+
+    document.getElementById('summaryBox').innerHTML =
+      `VPC <strong>${esc(document.getElementById('vpcCidr').value)}</strong> ` +
+      `<span style="opacity:0.7">(${esc(vpcRange)})</span><br>` +
+      summaryParts.join(' &nbsp;|&nbsp; ') +
+      `<br><span style="opacity:0.65;font-size:0.78rem">💡 Click any CIDR in the results table to see a detailed breakdown.</span>`;
+
+    // IP Bar
+    renderIpBar(vpc, azOutput, vpcEnd);
+
+    // AZ result tables
+    const totalSubnetCount = azOutput.reduce((sum, {rows}) => sum + rows.length, 0);
+    const azHeader = `<div class="az-results-header">
+      <h3>📋 Subnet Allocation</h3>
+      <span class="subnet-count">${totalSubnetCount} subnet${totalSubnetCount !== 1 ? 's' : ''} across ${azOutput.length} AZ${azOutput.length !== 1 ? 's' : ''}</span>
+    </div>`;
+    document.getElementById('azResults').innerHTML = azHeader + azOutput.map(({ az, rows }) => `
+      <div class="result-az raz-${az}">
+        <div class="result-az-header">
+          <span class="az-dot"></span>
+          ${esc(azLabel(az))}
+        </div>
+        ${rows.length === 0
+          ? `<div class="empty-az">No subnets assigned to this AZ.</div>`
+          : `<table class="result-table">
+              <colgroup>
+                <col class="col-type"><col class="col-name"><col class="col-cidr">
+                <col class="col-range"><col class="col-total"><col class="col-usable">
+              </colgroup>
+              <thead><tr>
+                <th>Type</th><th>Name</th><th>CIDR</th>
+                <th>Range</th>
+                <th style="text-align:right">Total</th>
+                <th style="text-align:right">Usable</th>
+              </tr></thead>
+              <tbody>
+              ${rows.map(r => {
+                if (!r.cidr) return `
+                  <tr>
+                    <td data-label="Type"><span class="tag ${esc(r.def.type)}">${esc(r.def.type)}</span></td>
+                    <td data-label="Name">${esc(r.def.name||'unnamed')}</td>
+                    <td data-label="CIDR"><span class="warn-text">⚠ no space</span></td>
+                    <td data-label="Range">—</td><td data-label="Total IPs">—</td><td data-label="Usable IPs">—</td>
+                  </tr>`;
+                const reserved = awsReservedIps(r.start, r.end);
+                const range = `${intToIp(r.start)} – ${intToIp(r.end - 1)}`;
+                return `
+                  <tr>
+                    <td data-label="Type"><span class="tag ${esc(r.def.type)}">${esc(r.def.type)}</span></td>
+                    <td data-label="Name">${esc(r.def.name||'unnamed')}</td>
+                    <td data-label="CIDR" style="white-space:nowrap;">
+                      <span class="cidr-val"
+                        data-cidr="${esc(r.cidr)}"
+                        data-range="${esc(range)}"
+                        data-total="${r.blockSize}"
+                        data-usable="${r.usable}"
+                        data-prefix="${r.prefix}"
+                        data-start="${r.start}"
+                        data-end="${r.end}"
+                        data-prev-end="${r._prevEnd??-1}"
+                        data-prev-start="${r._prevStart??-1}"
+                        data-prev-cidr="${esc(r._prevCidr??'')}"
+                        onclick="showExplainerFromEl(this)"
+                      >${esc(r.cidr)}</span><button class="copy-btn" onclick="copyCidrText(this, '${esc(r.cidr)}')" title="Copy CIDR">⎘</button>
+                    </td>
+                    <td data-label="Range">${esc(range)}</td>
+                    <td data-label="Total IPs" style="text-align:right">${r.blockSize}</td>
+                    <td data-label="Usable IPs" style="text-align:right">${r.usable}</td>
+                  </tr>`;
+              }).join('')}
+            </tbody></table>`
+        }
+      </div>`).join('');
+
+    if (warnings.length) { showError(warnings.join('<br>')); }
+    resultsDiv.className = 'results show'; hasCalculated = true; updateProgress(); if (quizMode) { applyQuizOverlays(document.getElementById('azResults')); } updateQuizHint(); setTimeout(() => { const top = resultsDiv.getBoundingClientRect().top + window.scrollY - 70; window.scrollTo({ top, behavior: 'smooth' }); }, 50);
+    document.getElementById('explainer').style.display = 'none';
+    renderArchDiagram(vpc, azOutput, vpcEnd);
+  }
+
+  // ── Explainer ──
+  function showExplainerFromEl(el) {
+    const d = el.dataset;
+    showExplainer(
+      d.cidr, d.range,
+      parseInt(d.total), parseInt(d.usable), parseInt(d.prefix),
+      parseInt(d.start), parseInt(d.end),
+      parseInt(d.prevEnd), parseInt(d.prevStart),
+      d.prevCidr
+    );
+  }
+
+  function showExplainer(cidr, range, total, usable, prefix, startInt, endInt, prevEnd, prevStart, prevCidr) {
+    const el = document.getElementById('explainer');
+    const reserved = awsReservedIps(startInt, endInt);
+
+
+    document.getElementById('explainerKv').innerHTML = `
+      <div class="k">CIDR</div><div><strong>${esc(cidr)}</strong></div>
+      <div class="k">Range</div><div>${esc(range)}</div>
+      <div class="k">Prefix</div><div>
+        /${prefix} → 2^(32−${prefix}) = ${total} total IPs<br>
+        <span style="font-size:0.78rem;color:#334155;margin-top:3px;display:block;">
+          ${total === 65536
+            ? `/${prefix} is the largest AWS allows (/16 = 65,536 IPs). Your request exceeds what a single AWS subnet can hold. Consider splitting across multiple subnets.`
+            : `/${prefix+1} would give ${total/2} IPs (only ${total/2 - 5} usable - not enough for ${usable} requested).<br>${prefix > 16 ? `/${prefix-1} would give ${total*2} IPs but wastes space. ` : ''}/${prefix} is the smallest that fits.`
+          }
+        </span>
+      </div>
+      <div class="k">Usable IPv4</div><div>${usable} &nbsp;(${total} total − 5 AWS reserved)</div>
+      <div class="k">Block boundary</div><div>Every ${total} IPs &nbsp;(valid starts: 0, ${total}, ${total*2}…)</div>
+      <div class="k">AWS reserved</div><div>${esc(reserved.join(', '))}</div>`;
+
+    // Render "Why this start IP?" as a separate box below the kv grid
+    const whyBox = document.getElementById('explainerWhy');
+    whyBox.style.display = 'block';
+    if (prevEnd > 0 && prevCidr) {
+      const gapStart = prevEnd;
+      const gapEnd   = startInt - 1;
+      const hasGap   = startInt > prevEnd;
+      const gapSize  = hasGap ? (startInt - prevEnd) : 0;
+
+      // Use EQUAL fixed widths for all segments so tiny subnets are always visible
+      const segCount  = hasGap ? 4 : 3; // prev | [gap] | this | next
+      const prevW     = Math.floor(100 / segCount);
+      const gapW      = hasGap ? Math.floor(100 / segCount) : 0;
+      const thisW     = Math.floor(100 / segCount);
+      const nextW     = 100 - prevW - gapW - thisW;
+
+      // Valid boundaries list
+      const validBoundaries = [];
+      let b = startInt - total * 2;
+      for (let i = 0; i < 5; i++, b += total) {
+        if (b >= 0) validBoundaries.push(intToIp(b));
+      }
+
+      const barHtml = `
+        <div style="margin:14px 0 6px;font-size:0.7rem;color:#334155;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;">Address space — how blocks line up</div>
+        <div style="display:flex;height:44px;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;font-size:0.68rem;font-weight:600;">
+          <div style="width:${prevW}%;background:#bfdbfe;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#1e40af;overflow:hidden;padding:0 6px;text-align:center;gap:2px;">
+            <span>${esc(prevCidr)}</span>
+            <span style="font-weight:normal;font-size:0.6rem;opacity:0.8;">✓ used</span>
+          </div>
+          ${hasGap ? `<div style="width:${gapW}%;background:repeating-linear-gradient(45deg,#fef9c3,#fef9c3 5px,#fde68a 5px,#fde68a 10px);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#92400e;overflow:hidden;padding:0 6px;text-align:center;gap:2px;">
+            <span>⚠ gap</span>
+            <span style="font-weight:normal;font-size:0.6rem;">${gapSize} IPs wasted</span>
+          </div>` : ''}
+          <div style="width:${thisW}%;background:#6ee7b7;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#065f46;overflow:hidden;padding:0 6px;text-align:center;gap:2px;">
+            <span>${intToIp(startInt)}/${prefix}</span>
+            <span style="font-weight:normal;font-size:0.6rem;">← this subnet</span>
+          </div>
+          <div style="width:${nextW}%;background:#f1f5f9;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#334155;overflow:hidden;padding:0 6px;text-align:center;gap:2px;">
+            <span>${intToIp(endInt)}</span>
+            <span style="font-weight:normal;font-size:0.6rem;">next /${prefix}…</span>
+          </div>
+        </div>
+        <div style="display:flex;font-size:0.67rem;color:#334155;margin-top:3px;">
+          <div style="width:${prevW}%;text-align:left;">${intToIp(prevStart)}</div>
+          ${hasGap ? `<div style="width:${gapW}%;text-align:center;color:#b45309;">${intToIp(gapStart)} – ${intToIp(gapEnd)}</div>` : ''}
+          <div style="width:${thisW}%;text-align:center;color:#065f46;font-weight:bold;">${intToIp(startInt)}</div>
+          <div style="width:${nextW}%;text-align:right;">${intToIp(endInt)}</div>
+        </div>`;
+
+      whyBox.innerHTML = `
+        <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:#92400e;margin-bottom:8px;font-weight:700;">Why does this subnet start at ${intToIp(startInt)}?</div>
+        ${barHtml}
+        <div style="font-size:0.82rem;line-height:1.8;color:#334155;margin-top:12px;">
+          ${hasGap
+            ? `A <strong>/${prefix}</strong> block is <strong>${total} IPs</strong> in size. Each subnet must start at a <em>valid boundary</em> - an address that is a multiple of ${total}:<br>
+               <div style="margin:6px 0 8px 0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                 ${validBoundaries.map((ip, i) => `<span style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:5px;padding:2px 8px;font-size:0.78rem;color:#1e40af;font-family:monospace;">${ip}</span>${i < validBoundaries.length-1 ? '<span style="color:#334155;">→</span>' : ''}`).join('')}
+               </div>
+               After <strong>${intToIp(prevEnd-1)}</strong>, the next free address is <strong>${intToIp(gapStart)}</strong> — but it falls between boundaries.<br>
+               So <strong>${intToIp(gapStart)} – ${intToIp(gapEnd)}</strong> (${gapSize} IPs) are skipped as an alignment gap.<br>
+               The next valid boundary is <strong style="color:#1e40af">${intToIp(startInt)}</strong>.`
+            : `The previous block ends at <strong>${intToIp(prevEnd-1)}</strong>. The very next address <strong>${intToIp(startInt)}</strong> is already on a valid boundary for a <strong>/${prefix}</strong> block — no gap needed.`
+          }
+          <div style="margin-top:10px;padding:8px 12px;background:#f8fafc;border-radius:6px;font-size:0.78rem;color:#334155;border-left:3px solid #e2e8f0;">
+            ${total === 65536
+              ? `/${prefix} (/16) is the largest single subnet AWS allows (65,536 IPs). Your request exceeds this. Consider splitting across multiple subnets.`
+              : prefix > 16
+                ? `A larger /${prefix-1} would also start here but gives ${total*2} IPs - far more than needed. /${prefix} (${total} IPs) is the smallest that fits your request.`
+                : `/${prefix} (${total} IPs) is the smallest that fits your request and also the largest AWS allows for a single subnet.`
+            }
+          </div>
+          ${hasGap ? `
+          <div style="margin-top:10px;padding:10px 14px;background:#fefce8;border:1px solid #fde68a;border-radius:8px;font-size:0.8rem;color:#78350f;line-height:1.7;">
+            <div style="font-weight:700;margin-bottom:4px;">💡 Why does this gap exist?</div>
+            This is not an AWS rule — it is a fundamental <strong>binary math rule</strong> that all networking systems follow (Linux, Cisco, Azure, GCP alike).<br><br>
+            A subnet of size <strong>N</strong> must start at an address that is a <strong>multiple of N</strong>. This comes directly from CIDR notation: a /${prefix} means the first ${prefix} bits are fixed, so the remaining bits must all be zero at the start — forcing the address onto a multiple-of-${total} boundary.<br><br>
+            Gaps appear when a <strong>small subnet is placed before a large one</strong>. The small subnet ends at an address that is not a multiple of the large block's size, leaving unusable space until the next valid boundary.<br><br>
+            This tool always places the <strong>largest subnet first</strong> within each AZ to minimise gaps — the biggest block lands cleanly at the VPC start (already aligned at 0), and smaller blocks follow without wasting space.<br><br>
+            <span style="color:#92400e;">The gap you see here was caused by a subnet from a <em>previous AZ</em> leaving the next available address at a position that is not a valid boundary for this larger block.</span>
+          </div>` : ''}
+        </div>`;
+    } else {
+      whyBox.innerHTML = `
+        <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:#92400e;margin-bottom:8px;font-weight:700;">Why does this subnet start at ${intToIp(startInt)}?</div>
+        <div style="font-size:0.82rem;line-height:1.8;color:#334155;">
+          This is the first subnet — it starts at the beginning of the VPC address space: <strong style="color:#1e40af">${intToIp(startInt)}</strong>.
+        </div>`;
+    }
+    document.getElementById('explainerBox').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;">
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;">
+          <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:#334155;font-weight:700;margin-bottom:10px;">Why boundaries matter</div>
+          <div style="font-size:0.82rem;color:#334155;line-height:1.8;">
+            A <strong>/${prefix}</strong> block = <strong>${total} IPs</strong>.<br>
+            Valid start addresses:
+            <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:6px;">
+              <span style="color:#334155;font-size:0.75rem;">…</span>
+              ${[alignUp(startInt - total*2, total), alignUp(startInt - total, total), startInt, startInt + total].filter(x=>x>=0).map((ip,i) => 
+                `<span style="background:${ip===startInt?'#dbeafe':'#f1f5f9'};border:1px solid ${ip===startInt?'#93c5fd':'#e2e8f0'};border-radius:5px;padding:2px 7px;font-size:0.75rem;color:${ip===startInt?'#1e40af':'#334155'};font-family:monospace;">${intToIp(ip)}</span>`
+              ).join('<span style="color:#334155;font-size:0.75rem;">→</span>')}
+              <span style="color:#334155;font-size:0.75rem;">…</span>
+            </div>
+          </div>
+        </div>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;">
+          <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:#334155;font-weight:700;margin-bottom:10px;">AWS Reserved IPs</div>
+          <div style="font-size:0.8rem;color:#334155;line-height:1.9;">
+            ${reserved.map((ip, i) => {
+              const labels = ['network address','VPC router','DNS server','future use','broadcast'];
+              return `<div style="display:flex;gap:8px;align-items:baseline;">
+                <span style="font-family:monospace;color:#1e40af;min-width:100px;">${ip}</span>
+                <span style="color:#334155;font-size:0.75rem;">← ${labels[i]}</span>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>`;
+    // IP list preview — append after explainerBox
+    const existingList = document.getElementById('ipListPreview');
+    if (existingList) existingList.remove();
+    const ipListDiv = document.createElement('div');
+    ipListDiv.id = 'ipListPreview';
+    ipListDiv.innerHTML = renderIpList(startInt, total, prefix);
+    el.appendChild(ipListDiv);
+
+    el.style.display = 'block';
+    setTimeout(() => {
+      const bar = document.getElementById('progressBarWrap');
+      const offset = bar ? bar.getBoundingClientRect().height + 16 : 90;
+      const top = el.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    }, 30);
+  }
+
+
+  // ── IP Address List Preview ──
+  function renderIpList(startInt, total, prefix) {
+    const endInt      = startInt + total - 1;
+    const firstUsable = startInt + 4;
+    const lastUsable  = endInt - 1;
+    const usableCount = total - 5;
+
+    function isEnd(ip)   { return (ip & 0xFF) === 255; }
+    function isStart(ip) { return (ip & 0xFF) === 0; }
+
+    function row(ipInt, label, classes) {
+      const isBoundary = (ipInt === startInt || ipInt === endInt);
+      const cls = ['ip-row', isBoundary ? 'ip-boundary' : '', classes || ''].join(' ').trim();
+      return `<div class="${cls}">
+        <span class="ip-addr">${intToIp(ipInt)}</span>
+        <span class="ip-label">${label}</span>
+      </div>`;
+    }
+
+    function divider(prevIp, nextIp) {
+      return `<div style="margin:6px 0 2px;border-top:1px dashed #cbd5e1;">
+        <span style="font-size:0.68rem;color:#7c3aed;font-style:italic;">
+          ↑ ${intToIp(prevIp)} &nbsp;·&nbsp; last octet hits 255, third octet increments &nbsp;·&nbsp; ${intToIp(nextIp)} ↓
+        </span>
+      </div>`;
+    }
+
+    // Find the first .255 → .0 boundary that exists within usable IPs
+    // e.g. for 10.0.0.0/21, first boundary is 10.0.0.255 → 10.0.1.0
+    let firstBoundaryEnd = -1;
+    for (let ip = firstUsable; ip <= lastUsable; ip++) {
+      if (isEnd(ip) && ip + 1 <= lastUsable) { firstBoundaryEnd = ip; break; }
+    }
+    const hasBoundary = firstBoundaryEnd !== -1;
+    const firstBoundaryStart = firstBoundaryEnd + 1;
+
+    // Build the list of items to render
+    // Structure:
+    //   [reserved x4]
+    //   [first 4 usable]
+    //   ... ellipsis up to boundary ...
+    //   [boundary: .255 and .0]   ← always shown if exists
+    //   ... ellipsis after boundary ...
+    //   [last 3 usable]
+    //   [broadcast]
+
+    const items = [];
+
+    // Reserved
+    items.push({ ip: startInt,     label: '← Network address (reserved)', cls: 'ip-reserved' });
+    items.push({ ip: startInt + 1, label: '← VPC router (reserved)',       cls: 'ip-reserved' });
+    items.push({ ip: startInt + 2, label: '← DNS server (reserved)',       cls: 'ip-reserved' });
+    items.push({ ip: startInt + 3, label: '← Future use (reserved)',       cls: 'ip-reserved' });
+
+    // First 4 usable
+    const showFirst = Math.min(4, usableCount);
+    for (let i = 0; i < showFirst; i++) {
+      items.push({ ip: firstUsable + i, label: i === 0 ? '← First usable IP' : '', cls: 'ip-usable' });
+    }
+
+    if (hasBoundary) {
+      // IPs already shown in first block (firstUsable to firstUsable+showFirst-1)
+      const firstBlockEnd = firstUsable + showFirst - 1;
+
+      // Gap BEFORE boundary — IPs between first block and .255
+      const gapBefore = firstBoundaryEnd - 1 - firstBlockEnd;
+      if (gapBefore > 0) {
+        items.push({ ellipsis: `… ${gapBefore.toLocaleString()} more usable IPs …` });
+      }
+
+      // The boundary pair — only add .255 if not already shown in first block
+      if (firstBoundaryEnd > firstBlockEnd) {
+        items.push({ ip: firstBoundaryEnd, label: '← last IP in this /24 block', cls: 'ip-usable ip-boundary-cross', dividerAfter: true });
+      }
+      items.push({ ip: firstBoundaryStart, label: '← first IP in next /24 block', cls: 'ip-usable ip-boundary-cross' });
+
+      // Last 3 usable — but only if they don't overlap with boundary pair
+      const showLast = Math.min(3, usableCount);
+      const lastStart = lastUsable - showLast + 1;
+
+      // Gap AFTER boundary — IPs between .0 and last 3
+      const gapAfter = lastStart - firstBoundaryStart - 1;
+      if (gapAfter > 0) {
+        items.push({ ellipsis: `… ${gapAfter.toLocaleString()} more usable IPs …` });
+      }
+
+      // Last 3 usable (skip any already shown as boundary)
+      for (let i = 0; i < showLast; i++) {
+        const ipInt = lastStart + i;
+        if (ipInt === firstBoundaryEnd || ipInt === firstBoundaryStart) continue;
+        const isLast = ipInt === lastUsable;
+        items.push({ ip: ipInt, label: isLast ? '← Last usable IP' : '', cls: 'ip-usable' });
+      }
+    } else {
+      // No boundary — simple ellipsis + last IPs
+      const showLast = Math.min(3, Math.max(0, usableCount - showFirst));
+      const middleCount = Math.max(0, usableCount - showFirst - showLast);
+      if (middleCount > 0) items.push({ ellipsis: `… ${middleCount.toLocaleString()} more usable IPs …` });
+      for (let i = showLast - 1; i >= 0; i--) {
+        items.push({ ip: lastUsable - i, label: i === 0 ? '← Last usable IP' : '', cls: 'ip-usable' });
+      }
+    }
+
+    // Broadcast
+    items.push({ ip: endInt, label: '← Broadcast (reserved)', cls: 'ip-reserved' });
+
+    // Render
+    let html = `<div class="ip-list-wrap">
+      <div class="ip-list-header">
+        <span>📋 Complete IP Range — ${intToIp(startInt)} to ${intToIp(endInt)}</span>
+        <span>${total.toLocaleString()} total IPs &nbsp;|&nbsp; ${usableCount.toLocaleString()} usable</span>
+      </div>
+      <div class="ip-list-body">`;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.ellipsis) {
+        html += `<div class="ip-ellipsis">&nbsp;&nbsp;&nbsp;${item.ellipsis}</div>`;
+      } else {
+        html += row(item.ip, item.label, item.cls);
+        // Insert divider after .255 before .0
+        if (item.dividerAfter && i + 1 < items.length && !items[i+1].ellipsis) {
+          html += divider(item.ip, items[i+1].ip);
+        }
+      }
+    }
+
+    html += `</div></div>`;
+    return html;
+  }
+
+  // ── Sync split VPC inputs into hidden #vpcCidr ──
+  function syncVpcCidr() { hasStep2Touched = true; updateProgress();
+    const ip = document.getElementById('vpcIp').value.trim();
+    const prefix = document.getElementById('vpcPrefix').value;
+    document.getElementById('vpcCidr').value = ip + '/' + prefix;
+  }
+
+  // ── When prefix changes, update VPC display only — do NOT touch Quick Reference ──
+  function syncQuickFromPrefix() {
+    // intentionally empty — VPC prefix and subnet size reference are independent
+  }
+
+  // ── Copy CIDR ──
+  function copyCidrText(btn, cidr) {
+    // Try modern clipboard API first, fall back to execCommand
+    const done = () => {
+      btn.textContent = '✓';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '⎘'; btn.classList.remove('copied'); }, 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(cidr).then(done).catch(() => fallbackCopy(cidr, done));
+    } else {
+      fallbackCopy(cidr, done);
+    }
+  }
+  function fallbackCopy(text, done) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { document.execCommand('copy'); done(); } catch(e) { alert('Copy: ' + text); }
+    document.body.removeChild(ta);
+  }
+
+  // ── Copy Results ──
+  function copyResults(btn) {
+    const vpc = document.getElementById('vpcCidr').value;
+    const azDivs = document.querySelectorAll('#azResults .result-az');
+    const subnetCount = document.querySelectorAll('#azResults .result-table tr:not(:first-child)').length;
+    let lines = [
+      '# VPC Subnet Allocation - Generated by VPC Subnet Learning Calculator',
+      '# Following is the plain-text summary of your calculated subnets',
+      `# VPC: ${vpc}  |  Subnets: ${subnetCount}  |  AZs: ${azDivs.length}`,
+      ''
+    ];
+    azDivs.forEach((div, i) => {
+      const header = div.querySelector('.result-az-header');
+      lines.push(header ? header.textContent.trim() : `AZ-${i+1}`);
+      const rows = div.querySelectorAll('.result-table tr:not(:first-child)');
+      rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length < 4) return;
+        const type   = cells[0].textContent.trim();
+        const name   = cells[1].textContent.trim();
+        // read cidr from data attribute on the span — reliable, no ⎘ stripping needed
+        const cidrEl = cells[2].querySelector('[data-cidr]');
+        const cidr   = cidrEl ? cidrEl.dataset.cidr : cells[2].textContent.replace(/[⎘✓]/g,'').trim();
+        const range  = cells[3].textContent.trim();
+        const total  = cells[4] ? cells[4].textContent.trim() : '';
+        const usable = cells[5] ? cells[5].textContent.trim() : '';
+        lines.push(`  ${name} (${type})  ${cidr}  ${range}  total: ${total}  usable: ${usable}`);
+      });
+      lines.push('');
+    });
+    const text = lines.join('\n');
+    const done = () => {
+      btn.textContent = '✓ Copied'; btn.style.background = '#f0fdf4'; btn.style.borderColor = '#86efac';
+      setTimeout(() => { btn.textContent = 'Copy Results'; btn.style.background = ''; btn.style.borderColor = ''; }, 2000);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+    } else {
+      fallbackCopy(text, done);
+    }
+  }
+
+
+
+  // ── CloudFormation export ──
+  function copyCloudFormation(btn) {
+    const vpc     = document.getElementById('vpcCidr').value;
+    const azDivs  = document.querySelectorAll('#azResults .result-az');
+    const azLetters = ['a','b','c','d'];
+    const q = '"';
+    const subnetCount = document.querySelectorAll('#azResults .result-table tr:not(:first-child)').length;
+    const azCount = document.querySelectorAll('#azResults .result-az').length;
+    let lines = [
+      '# VPC CloudFormation Template - Generated by VPC Subnet Learning Calculator',
+      '# Following is an AWS CloudFormation YAML template for VPC: ' + vpc + ' with ' + subnetCount + ' subnets across ' + azCount + ' AZs',
+      '# Replace VpcId: !Ref VPC with your actual VPC resource or parameter',
+      '',
+      'AWSTemplateFormatVersion: ' + q + '2010-09-09' + q,
+      'Description: VPC and Subnets',
+      '',
+      'Resources:',
+      '',
+      '  VPC:',
+      '    Type: AWS::EC2::VPC',
+      '    Properties:',
+      '      CidrBlock: ' + q + vpc + q,
+      '      EnableDnsSupport: true',
+      '      EnableDnsHostnames: true',
+      '      Tags:',
+      '        - Key: Name',
+      '          Value: main-vpc',
+      ''
+    ];
+
+    azDivs.forEach((div, azIdx) => {
+      const azLetter = azLetters[azIdx] || String.fromCharCode(97 + azIdx);
+      const rows = div.querySelectorAll('.result-table tr:not(:first-child)');
+      rows.forEach(row => {
+        const cells   = row.querySelectorAll('td');
+        if (cells.length < 4) return;
+        const type    = cells[0].textContent.trim();
+        const name    = cells[1].textContent.trim();
+        const cidrEl  = cells[2].querySelector('[data-cidr]');
+        const cidr    = cidrEl ? cidrEl.dataset.cidr : cells[2].textContent.replace(/[⎘✓]/g,'').trim();
+        const isPublic = type === 'public';
+        const logicalId = name.replace(/[^a-zA-Z0-9]/g, '') + 'AZ' + azLetter.toUpperCase();
+        lines.push('  ' + logicalId + ':');
+        lines.push('    Type: AWS::EC2::Subnet');
+        lines.push('    Properties:');
+        lines.push('      VpcId: !Ref VPC');
+        lines.push('      CidrBlock: ' + q + cidr + q);
+        lines.push('      AvailabilityZone: !Select [' + azIdx + ", !GetAZs '']");
+        lines.push('      MapPublicIpOnLaunch: ' + isPublic);
+        lines.push('      Tags:');
+        lines.push('        - Key: Name');
+        lines.push('          Value: ' + name + '-az' + azLetter);
+        lines.push('        - Key: Type');
+        lines.push('          Value: ' + type);
+        lines.push('');
+      });
+    });
+
+    const text = lines.join('\n');
+    const done = () => { btn.textContent = '✓ Copied'; btn.style.background = '#f0fdf4'; btn.style.borderColor = '#86efac'; setTimeout(() => { btn.textContent = 'Copy CloudFormation'; btn.style.background = ''; btn.style.borderColor = ''; }, 2000); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+    } else { fallbackCopy(text, done); }
+  }
+
+  // ── AWS CLI export ──
+  function copyAwsCli(btn) {
+    const azDivs    = document.querySelectorAll('#azResults .result-az');
+    const azLetters = ['a','b','c','d'];
+    const subnetCountCli = document.querySelectorAll('#azResults .result-table tr:not(:first-child)').length;
+    const azCountCli = document.querySelectorAll('#azResults .result-az').length;
+    let lines = [
+      '#!/bin/bash',
+      '# VPC Subnet Creation Script - Generated by VPC Subnet Learning Calculator',
+      '# Following are AWS CLI commands to create ' + subnetCountCli + ' subnets across ' + azCountCli + ' AZs',
+      '# Set your region and run this script to create subnets in an existing VPC',
+      '# Replace VPC_ID with your actual VPC ID',
+      '',
+      'REGION="us-east-1"   # Change to your region',
+      'VPC_ID="vpc-xxxxxxxxxxxxxxxxx"   # Replace with your VPC ID',
+      '',
+      '# Create subnets'
+    ];
+
+    azDivs.forEach((div, azIdx) => {
+      const azLetter = azLetters[azIdx] || String.fromCharCode(97 + azIdx);
+      const rows = div.querySelectorAll('.result-table tr:not(:first-child)');
+      if (rows.length) lines.push('\n# AZ-' + (azIdx + 1) + ' ($REGION' + azLetter + ')');
+      rows.forEach(row => {
+        const cells  = row.querySelectorAll('td');
+        if (cells.length < 4) return;
+        const type   = cells[0].textContent.trim();
+        const name   = cells[1].textContent.trim();
+        const cidrEl = cells[2].querySelector('[data-cidr]');
+        const cidr   = cidrEl ? cidrEl.dataset.cidr : cells[2].textContent.replace(/[⎘✓]/g,'').trim();
+        const tagName = name + '-az' + azLetter;
+        lines.push('aws ec2 create-subnet \\');
+        lines.push('  --vpc-id "$VPC_ID" \\');
+        lines.push('  --cidr-block "' + cidr + '" \\');
+        lines.push('  --availability-zone "${REGION}' + azLetter + '" \\');
+        lines.push('  --region "$REGION" \\');
+        lines.push("  --tag-specifications 'ResourceType=subnet,Tags=[{Key=Name,Value=" + tagName + "},{Key=Type,Value=" + type + "}]'");
+        lines.push('');
+      });
+    });
+
+    const text = lines.join('\n');
+    const done = () => { btn.textContent = '✓ Copied'; btn.style.background = '#f0fdf4'; btn.style.borderColor = '#86efac'; setTimeout(() => { btn.textContent = 'Copy AWS CLI'; btn.style.background = ''; btn.style.borderColor = ''; }, 2000); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+    } else { fallbackCopy(text, done); }
+  }
+
+    // ── Naming/Tagging strategy guide ──
+  function copyTaggingStrategy(btn) {
+    const azDivs = document.querySelectorAll('#azResults .result-az');
+    const azLetters = ['a','b','c','d'];
+    const env = 'prod';   // placeholder
+    const region = 'us-east-1';
+
+    const subnetCountTag = document.querySelectorAll('#azResults .result-table tr:not(:first-child)').length;
+    let lines = [
+      '# Subnet Naming & Tagging Guide - Generated by VPC Subnet Learning Calculator',
+      '# Following is the recommended naming convention and tagging strategy for ' + subnetCountTag + ' subnets',
+      '# Pattern: {env}-{region}-{type}-{purpose}-{az}',
+      '# Based on AWS Well-Architected naming conventions',
+      '',
+      '# ── Suggested Resource Names ──',
+      '',
+    ];
+
+    azDivs.forEach((div, azIdx) => {
+      const azLetter = azLetters[azIdx] || String.fromCharCode(97 + azIdx);
+      const rows = div.querySelectorAll('.result-table tr:not(:first-child)');
+      if (!rows.length) return;
+      lines.push(`# AZ-${azIdx + 1}`);
+      rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length < 4) return;
+        const type   = cells[0].textContent.trim();
+        const name   = cells[1].textContent.trim();
+        const cidrEl = cells[2].querySelector('[data-cidr]');
+        const cidr   = cidrEl ? cidrEl.dataset.cidr : '';
+        const suggested = `${env}-${region}${azLetter}-${type}-${name}`;
+        lines.push(`Subnet:       ${suggested}`);
+        lines.push(`CIDR:         ${cidr}`);
+        lines.push(`Route Table:  rtb-${type}-az${azLetter}`);
+        lines.push(`NACL:         nacl-${type}-${name}`);
+        lines.push('');
+      });
+    });
+
+    lines.push('# ── Recommended Tags (apply to all subnets) ──', '');
+    lines.push('Environment:    prod | staging | dev');
+    lines.push('ManagedBy:      terraform | cloudformation | manual');
+    lines.push('CostCenter:     your-team-or-project');
+    lines.push('Visibility:     public | private');
+    lines.push('');
+    lines.push('# ── Kubernetes / EKS Tags (if using EKS) ──', '');
+    lines.push('kubernetes.io/cluster/{cluster-name}:   shared | owned');
+    lines.push('kubernetes.io/role/elb:                 1   (for public subnets with ALB)');
+    lines.push('kubernetes.io/role/internal-elb:        1   (for private subnets with internal ALB)');
+
+    const text = lines.join('\n');
+    const done = () => { btn.textContent = '✓ Copied'; btn.style.background = '#f0fdf4'; btn.style.borderColor = '#86efac'; setTimeout(() => { btn.textContent = 'Copy Naming Guide'; btn.style.background = ''; btn.style.borderColor = ''; }, 2000); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+    } else { fallbackCopy(text, done); }
+  }
+
+  // ── Terraform export ──
+  function copyTerraform(btn) {
+    const vpc = document.getElementById('vpcCidr').value;
+    const azDivs = document.querySelectorAll('#azResults .result-az');
+    const vpcName = 'main';
+    const azSuffixes = ['a','b','c','d'];
+    let lines = [
+      `# Generated by VPC Subnet Learning Calculator`,
+      `# Replace var.aws_region with your region e.g. "us-east-1"`,
+      `# Tip: in production use data "aws_availability_zones" instead of hardcoded a/b/c suffixes`,
+      ``,
+      `resource "aws_vpc" "${vpcName}" {`,
+      `  cidr_block           = "${vpc}"`,
+      `  enable_dns_support   = true`,
+      `  enable_dns_hostnames = true`,
+      `  tags = { Name = "${vpcName}" }`,
+      `}`,
+      ``
+    ];
+    azDivs.forEach((div, azIdx) => {
+      const azSuffix = azSuffixes[azIdx] || String.fromCharCode(97 + azIdx);
+      const rows = div.querySelectorAll('.result-table tr:not(:first-child)');
+      rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length < 4) return;
+        const type    = cells[0].textContent.trim();
+        const name    = cells[1].textContent.trim();
+        const cidrEl  = cells[2].querySelector('[data-cidr]');
+        const cidr    = cidrEl ? cidrEl.dataset.cidr : cells[2].textContent.replace(/[⎘✓]/g,'').trim();
+        const isPublic = type === 'public';
+        // Sanitize for valid Terraform identifier: lowercase, non-[a-z0-9_] → _, no leading digit
+        const safeName = name.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^(\d)/, '_$1');
+        const resName = safeName + '_az' + azSuffix;
+        lines.push('resource "aws_subnet" "' + resName + '" {');
+        lines.push('  vpc_id            = aws_vpc.' + vpcName + '.id');
+        lines.push('  cidr_block        = "' + cidr + '"');
+        lines.push('  availability_zone = "${var.aws_region}' + azSuffix + '"  # Note: a/b/c mapping varies per AWS account');
+        lines.push('  map_public_ip_on_launch = ' + isPublic);
+        lines.push('  tags = { Name = "' + resName + '", Type = "' + type + '" }');
+        lines.push('}');
+        lines.push('');
+      });
+    });
+    const text = lines.join('\n');
+    const done = () => { btn.textContent = '✓ Copied'; btn.style.background = '#f0fdf4'; btn.style.borderColor = '#86efac'; setTimeout(() => { btn.textContent = 'Copy Terraform'; btn.style.background = ''; btn.style.borderColor = ''; }, 2000); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+    } else {
+      fallbackCopy(text, done);
+    }
+  }
+  // ── Reset soft (results + toggles only) ──
+  function resetSoft() {
+    azToggles = {};
+    renderAZs();
+    clearResults();
+    updateVpcHint();
+    updateProgress();
+  }
+
+  // ── Reset all ──
+  function resetAll() {
+    // Reset use case selector
+    document.querySelectorAll('[id^="uc-"]').forEach(el => {
+      el.style.opacity = '1';
+      el.style.boxShadow = '';
+    });
+    document.getElementById('useCaseInfo').style.display = 'none';
+    defs = [
+      { id: 1, name: 'public',  type: 'public',  ips: 0 },
+      { id: 2, name: 'private', type: 'private', ips: 0 }
+    ];
+    nextId = 3;
+    azToggles = {};
+    document.getElementById('vpcIp').value = '10.0.0.0';
+    document.getElementById('vpcPrefix').value = '16';
+    document.getElementById('numAZ').value = '2';
+    document.getElementById('quickUsable').value = '50';
+    syncVpcCidr();
+    syncQuickFromPrefix();
+    hasStep2Touched = false; // reset AFTER syncVpcCidr to undo its side-effect
+    renderDefList();
+    renderAZs();
+    clearResults();
+    updateVpcHint();
+    updateProgress();
+    // Scroll back to Step 1
+    setTimeout(() => {
+      resetQuizState();
+      const target = document.getElementById('useCaseCard') || document.getElementById('step1');
+      if (target) {
+        const top = target.getBoundingClientRect().top + window.scrollY - 80;
+        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+      }
+    }, 100);
+  }
+
+  // ── VPC IP quick select ──
+  const vpcIpHints = {
+    '10.0.0.0':    'Most common AWS VPC range. Large private space, ideal for most workloads.',
+    '10.1.0.0':    'Alternative 10.x range. Useful when peering multiple VPCs to avoid overlap.',
+    '172.16.0.0':  'RFC 1918 medium range (172.16–172.31). Less common but fully valid for AWS.',
+    '192.168.0.0': 'Familiar home/office range. Smaller space — fine for dev or small setups.',
+  };
+  function setVpcIp(ip) {
+    hasStep2Touched = true;
+    document.getElementById('vpcIp').value = ip;
+    syncVpcCidr();
+    renderAZs();
+    updateVpcHint();
+    clearResults();
+    const hint = document.getElementById('vpcIpHint');
+    if (hint) hint.textContent = vpcIpHints[ip] || '';
+  }
+
+  // ── Architecture Diagram ──
+  function renderArchDiagram(vpc, azOutput, vpcEnd) {
+    const vpcCidr = document.getElementById('vpcCidr').value;
+    const numAZ = azOutput.length;
+    const azColors = ['daz-1','daz-2','daz-3','daz-4'];
+
+
+    const hasPublic  = azOutput.some(a => a.rows.some(r => r.cidr && r.def.type === 'public'));
+    const hasPrivate = azOutput.some(a => a.rows.some(r => r.cidr && r.def.type === 'private'));
+
+    // Global cursor across AZs — mirrors real allocator
+    let cursorForDiagram = vpc.ipInt;
+
+    const azCols = azOutput.map(({ az, rows }, idx) => {
+      const colorCls   = azColors[idx] || 'daz-1';
+
+      const hasPublicInAZ  = rows.some(r => r.cidr && r.def.type === 'public');
+      const hasPrivateInAZ = rows.some(r => r.cidr && r.def.type === 'private');
+
+      const subnetsHtml = rows.map(r => {
+        let gapHtml = '';
+        if (r.cidr && r.start !== null && r.start > cursorForDiagram) {
+          const gapSize = r.start - cursorForDiagram;
+          gapHtml = `<div class="diag-gap">⚠ alignment gap · ${gapSize} IPs</div>`;
+        }
+        if (r.start !== null) cursorForDiagram = r.end;
+
+        if (!r.cidr) {
+          return `${gapHtml}<div class="diag-subnet ${r.def.type === 'public' ? 'pub' : 'priv'}" style="opacity:0.5;">
+            <div class="diag-subnet-type">${esc(r.def.type)}</div>
+            <div class="diag-subnet-name">${esc(r.def.name || 'unnamed')}</div>
+            <div class="diag-subnet-cidr" style="color:#ef4444;">⚠ no space</div>
+          </div>`;
+        }
+
+        const range = intToIp(r.start) + ' – ' + intToIp(r.end - 1);
+        const isPublic = r.def.type === 'public';
+
+        // Route table annotation
+        const routeNote = isPublic
+          ? `<div class="diag-route-note pub-route">📋 Route: 0.0.0.0/0 → IGW</div>`
+          : `<div class="diag-route-note priv-route">📋 Route: 0.0.0.0/0 → NAT GW</div>`;
+
+        // EC2 instances
+        const ec2 = `<div class="diag-ec2-row"><span class="diag-ec2">🖥 EC2 Instance</span></div>`;
+
+        return `${gapHtml}<div class="diag-subnet ${isPublic ? 'pub' : 'priv'}">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
+            <div>
+              <div class="diag-subnet-type">${esc(r.def.type)}</div>
+              <div class="diag-subnet-name">${esc(r.def.name || 'unnamed')}</div>
+              <div class="diag-subnet-cidr">${esc(r.cidr)}</div>
+              <div class="diag-subnet-range">${esc(range)}</div>
+            </div>
+            <div class="diag-subnet-meta">${r.blockSize} total<br>${r.usable} usable</div>
+          </div>
+          ${ec2}
+          ${routeNote}
+        </div>`;
+      }).join('');
+
+      // NAT Gateway (shown in each AZ that has both public + private)
+      const natGw = (hasPublicInAZ && hasPrivateInAZ)
+        ? `<div class="diag-nat-gw">🔀 NAT Gateway <span style="font-size:0.65rem;opacity:0.7;">(in public subnet)</span></div>`
+        : '';
+
+      return `<div class="diag-az-box ${colorCls}">
+        <div class="diag-az-label">
+          <span class="diag-az-dot"></span>
+          ${esc(azLabel(az))}
+        </div>
+        ${subnetsHtml}
+        ${natGw}
+      </div>`;
+    }).join('');
+
+    const cols = numAZ <= 2 ? numAZ : 2;
+    const colStyle = `grid-template-columns: repeat(${cols}, 1fr);`;
+
+
+    const html = `
+    <div class="diag-aws-cloud">
+      <div class="diag-layer-label cloud-label">☁️ AWS Cloud</div>
+      <div class="diag-aws-region">
+        <div class="diag-layer-label region-label">📍 AWS Region</div>
+
+        ${hasPublic ? `<div class="igw-row"><div class="igw-box">🌐 Internet Gateway</div></div><div class="arch-arrow">↕</div>` : ''}
+
+        <div class="vpc-outer">
+          <div class="vpc-outer-label">VPC</div>
+          <div class="vpc-outer-cidr">${esc(vpcCidr)} · ${vpc.totalIPs.toLocaleString()} IPs</div>
+          <div class="az-columns" style="${colStyle}">
+            ${azCols}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="diag-legend">
+      <div class="diag-legend-item"><div class="diag-legend-dot" style="background:#dbeafe;border:1.5px solid #93c5fd;"></div>Public subnet</div>
+      <div class="diag-legend-item"><div class="diag-legend-dot" style="background:#dcfce7;border:1.5px solid #86efac;"></div>Private subnet</div>
+      ${hasPublic && hasPrivate ? '<div class="diag-legend-item">🔀 NAT Gateway - allows private subnets to reach the internet (outbound only)</div>' : ''}
+      <div class="diag-legend-item"><div class="diag-legend-dot" style="background:repeating-linear-gradient(45deg,#fefce8,#fefce8 3px,#fef9c3 3px,#fef9c3 6px);border:1px dashed #fbbf24;"></div>Alignment gap</div>
+    </div>`;
+
+    document.getElementById('archDiagramInner').innerHTML = html;
+    document.getElementById('archDiagram').className = 'arch-diagram show';
+  }
+
+
+  // ══════════════════════════════════════════
+  // FEATURE 6: Share via URL
+  // ══════════════════════════════════════════
+  // FEATURE 3: Quiz Mode
+  // ══════════════════════════════════════════
+  let quizMode = false;
+
+  // Update button + hint text to reflect current quizMode state
+  function updateQuizHint() {
+    const hint = document.getElementById('quizToggleHint');
+    const btn  = document.getElementById('quizToggleBtn');
+    if (!hint || !btn) return;
+    if (quizMode) {
+      btn.textContent = '👁 Exit Quiz Mode';
+      btn.style.cssText = 'background:#fdf4ff;border:1.5px solid #e879f9;color:#701a75;';
+      hint.textContent = 'Quiz mode on — results will be hidden when you calculate.';
+      hint.style.color = '#059669';
+    } else {
+      btn.textContent = '🧠 Enter Quiz Mode';
+      btn.style.cssText = '';
+      hint.textContent = 'Toggle on before calculating to challenge yourself.';
+      hint.style.color = '#6b7280';
+    }
+  }
+
+  // Simple toggle — no conditions, always works
+  function toggleQuizMode() {
+    quizMode = !quizMode;
+    // If results are already showing, apply/remove overlays immediately
+    if (hasCalculated) {
+      const azResultsEl = document.getElementById('azResults');
+      if (quizMode) {
+        applyQuizOverlays(azResultsEl);
+      } else {
+        azResultsEl.querySelectorAll('.quiz-overlay').forEach(o => o.remove());
+      }
+    }
+    updateQuizHint();
+  }
+
+  // Apply quiz overlays to all AZ result cards
+  function applyQuizOverlays(azResultsEl) {
+    azResultsEl.querySelectorAll('.result-az').forEach((card, idx) => {
+      if (card.querySelector('.quiz-overlay')) return;
+      card.style.position = 'relative';
+      const overlay = document.createElement('div');
+      overlay.className = 'quiz-overlay';
+      overlay.innerHTML = `
+        <button onclick="exitQuizMode()" title="Exit Quiz Mode" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:1.1rem;cursor:pointer;color:#94a3b8;line-height:1;" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#94a3b8'">✕</button>
+        <div style="font-size:0.78rem;font-weight:700;color:#6d28d9;text-align:center;letter-spacing:0.08em;text-transform:uppercase;">
+          🧠 Quiz Mode — AZ-${idx+1}
+        </div>
+        <div style="font-size:0.9rem;color:#1e1b4b;font-weight:600;text-align:center;max-width:280px;line-height:1.5;">
+          What prefix do you expect for the largest subnet in this AZ?
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin:4px 0;">
+          <span style="font-size:1.6rem;font-weight:700;color:#334155;">/</span>
+          <input class="quiz-guess-input" type="number" min="16" max="28" placeholder="??" />
+        </div>
+        <button onclick="checkQuizGuess(this)" style="background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border:none;border-radius:10px;padding:10px 28px;font-family:inherit;font-size:0.88rem;font-weight:700;cursor:pointer;letter-spacing:0.02em;">Check Answer</button>
+        <div class="quiz-result-msg" style="min-height:24px;"></div>
+        <button onclick="revealQuizAz(this)" style="background:none;border:1.5px solid #c7d2fe;border-radius:8px;padding:6px 18px;font-family:inherit;font-size:0.8rem;color:#4f46e5;cursor:pointer;">Reveal Results</button>`;
+      card.appendChild(overlay);
+    });
+  }
+
+  // Full reset — called by clearResults and resetAll
+  function resetQuizState() {
+    quizMode = false;
+    document.getElementById('azResults').querySelectorAll('.quiz-overlay').forEach(o => o.remove());
+    updateQuizHint();
+  }
+
+  function checkQuizGuess(btn) {
+    const overlay  = btn.closest('.quiz-overlay');
+    const input    = overlay.querySelector('.quiz-guess-input');
+    const msgEl    = overlay.querySelector('.quiz-result-msg');
+    const guess    = parseInt(input.value, 10);
+    if (isNaN(guess)) { msgEl.textContent = 'Enter a number between 16 and 28'; msgEl.className = 'quiz-result-msg wrong'; return; }
+
+    // Find the actual largest subnet prefix in this AZ card
+    const card     = overlay.parentElement;
+    const cidrEls  = card.querySelectorAll('.cidr-val');
+    if (!cidrEls.length) { msgEl.textContent = 'No results to check against.'; return; }
+    const prefixes = [...cidrEls].map(el => parseInt(el.dataset.prefix, 10)).filter(p => !isNaN(p));
+    const smallest = Math.min(...prefixes); // smallest prefix = largest block
+
+    if (guess === smallest) {
+      msgEl.textContent = `Correct! /${smallest} is right.`;
+      msgEl.className   = 'quiz-result-msg correct';
+      input.style.borderColor = '#059669';
+    } else {
+      msgEl.textContent = `Not quite. The largest subnet is /${smallest}. You guessed /${guess}.`;
+      msgEl.className   = 'quiz-result-msg wrong';
+      input.style.borderColor = '#dc2626';
+    }
+  }
+
+  function exitQuizMode() {
+    quizMode = false;
+    document.getElementById('azResults').querySelectorAll('.quiz-overlay').forEach(o => o.remove());
+    updateQuizHint();
+  }
+
+  function revealQuizAz(btn) {
+    btn.closest('.quiz-overlay').remove();
+    // If no more overlays remain, exit quiz mode fully
+    const remaining = document.querySelectorAll('#azResults .quiz-overlay').length;
+    if (remaining === 0) {
+      quizMode = false;
+      updateQuizHint();
+    }
+  }
+
+  // ── Init ──
+  renderUseCaseGrid();
+  renderDefList();
+  renderAZs();
+  updateQuickCalc();
+  updateVpcHint();
+  updateQuizHint();
+</script>
+</div>
